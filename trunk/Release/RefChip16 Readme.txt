@@ -19,5 +19,17 @@ Button B = X
 Start = Return
 Select = Right Shift
 
+
+Player 2 (not that we care currently lol)
+
+Up = W
+Down = S
+Left = A
+Right = D
+Button A = R
+Button B = T
+Start = Left Shift
+Select = Left Control
+
 Enjoy!
 
