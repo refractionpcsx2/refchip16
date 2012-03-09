@@ -47,7 +47,7 @@ char ActualVSync = 1;
 
 unsigned char ScreenBuffer[320][240];
 Sprite SpriteSet;
-bool drawing = false;
+
 struct CHIP16VERTEX {FLOAT X, Y, Z; DWORD COLOR;};
 #define CUSTOMFVF (D3DFVF_XYZ | D3DFVF_DIFFUSE)
 #define CPU_LOG __Log
@@ -87,6 +87,7 @@ void D3DReset()
 	SpriteSet.HorizontalFlip = SpriteSet.VerticalFlip = false;
 	memset(ScreenBuffer, 0, sizeof(ScreenBuffer)); 
 	ClearRenderTarget();
+	CPU_LOG("D3D Reset");
 
 }
 
@@ -98,7 +99,7 @@ void ClearRenderTarget()
 	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET,pixelcolours[SpriteSet.BackgroundColour] , 1.0f, 0);
 	d3ddev->Clear(0, NULL, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
 
-	StartDrawing();
+	//StartDrawing();
 }
 
 void StartDrawing()
@@ -199,7 +200,7 @@ void InitDisplay(int width, int height, HWND hWnd)
     d3d->CreateDevice(D3DADAPTER_DEFAULT,
                       D3DDEVTYPE_HAL,
                       hWnd,
-                      D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                      D3DCREATE_HARDWARE_VERTEXPROCESSING,
                       &d3dpp,
                       &d3ddev);
 
@@ -209,7 +210,7 @@ void InitDisplay(int width, int height, HWND hWnd)
 	d3ddev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE); // for some reason this culls by default?! wtf
     d3ddev->SetRenderState(D3DRS_LIGHTING, FALSE);    // turn off the 3D lighting
     d3ddev->SetRenderState(D3DRS_ZENABLE, FALSE);    // turn on the z-buffer
-	d3ddev->SetRenderState(D3DRS_VERTEXBLEND, D3DVBF_3WEIGHTS);
+
 	D3DXMATRIX Ortho2D;	
     D3DXMATRIX Identity;
     
@@ -321,14 +322,14 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 
 	D3DXMATRIX matTranslate;
 
-	CPU_LOG("Starting Sprite draw\n");
+	//FPS_LOG("Starting Sprite draw\n");
 	//CPU_LOG("\nAt X=%x X+S=%x Y=%x to Y+S=%x\n", X, X+SpriteSet.Width, Y, Y + SpriteSet.Height);
 
 	CPU::Flag.CarryBorrow = 0;
 
 	for(int i = ystart; i != yend;){
 		MemAddr += StartMemSkip >> 1;
-		CPU_LOG("\n");
+		//CPU_LOG("\n");
 		j = xstart + (StartMemSkip & 0x1);
 		for(; j != xend;)
 		{	
@@ -339,14 +340,18 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 			curpixel = curpixel >> ((~MemPos & 0X1) << 2) & 0xf;
 
 							
-			CPU_LOG("%x", curpixel);
+			
 			if(curpixel > 0)
 			{
 				if(ScreenBuffer[j][i] != 0) CPU::Flag.CarryBorrow = 1;	//Check collision
-
-				D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
-				d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
-				d3ddev->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, curpixel*4, 0, 4, 0, 2); 
+				//CPU_LOG("cur %x scrbf %x", curpixel, ScreenBuffer[j][i]);
+				if(ScreenBuffer[j][i] != curpixel)
+				{					
+					D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
+					d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
+					d3ddev->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, curpixel*4, 0, 4, 0, 2);
+					
+				}
 			}
 			ScreenBuffer[j][i] = curpixel;	
 
@@ -360,7 +365,7 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 	//QueryPerformanceCounter((LARGE_INTEGER *)&count2);
 
 //	FPS_LOG("Cycles to render %d x %d Sprite %d\n", SpriteSet.Height, SpriteSet.Width, count2 - count1);
-//	CPU_LOG("End Sprite draw\n");
+	//FPS_LOG("End Sprite draw\n");
 }
 
 
@@ -370,7 +375,7 @@ void RedrawLastScreen()
 	D3DXMATRIX matTranslate;
 	
 	if(drawing == false) return;
-	FPS_LOG("Starting redraw");
+	//FPS_LOG("Starting redraw");
 	
 	for(int i = 239; i != 0; --i){
 		for(int j = 319; j != 0; --j){	

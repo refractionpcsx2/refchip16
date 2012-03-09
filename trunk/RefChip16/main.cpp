@@ -53,6 +53,7 @@ int fps = 0;
 char headingstr [128];
 char inisettings[4];
 char MenuScale = 1;
+
 int SCREEN_WIDTH = 320;
 int SCREEN_HEIGHT = 240;
 RECT        rc;
@@ -251,7 +252,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				//framenumber++;
 				//CPU_LOG("Time for frame %d to render %d cycles\n", framenumber, vsyncend - vsyncstart);
 				VBlank = 1;
-				RedrawLastScreen();
+				//RedrawLastScreen();
 				EndDrawing();
 				nextvsync += (1000000 / 60);
 

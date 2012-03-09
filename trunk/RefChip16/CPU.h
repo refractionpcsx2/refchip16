@@ -84,7 +84,8 @@ class CPU
 		extern unsigned long nextvsync;
 		extern bool Running;
 		extern char Recompiler;
-		
+		extern bool drawing;
+
 		unsigned short __fastcall GenerateRandom();
 		void FetchOpCode();
 		void ExecuteOp();
