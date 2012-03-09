@@ -23,11 +23,11 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 
-#define SCREEN_WIDTH 320*3
-#define SCREEN_HEIGHT 240*3
+extern int SCREEN_WIDTH;
+extern int SCREEN_HEIGHT;
 
 extern D3DPRESENT_PARAMETERS d3dpp;
-extern bool MenuVSync;
+extern char MenuVSync;
 
 struct Sprite
 {

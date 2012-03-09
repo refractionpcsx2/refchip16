@@ -56,7 +56,7 @@ FlagRegister Flag;
 unsigned long cycles;
 unsigned long nextvsync;
 bool Running = false;
-bool Recompiler = true;
+char Recompiler = 1;
 FILE * LogFile; 
 unsigned short StackPTR;
 unsigned short GPR[16];

@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <crtdbg.h>*/
 // Create our new Chip16 app
-
+FILE * iniFile;  //Create Ini File Pointer
 InputDevice *RefChip16Input;
 SoundDevice *RefChip16Sound;
 RecCPU *RefChip16RecCPU;
@@ -51,6 +51,11 @@ __int64 vsyncstart, vsyncend;
 unsigned char framenumber;
 int fps = 0;	
 char headingstr [128];
+char inisettings[4];
+char MenuScale = 1;
+int SCREEN_WIDTH = 320;
+int SCREEN_HEIGHT = 240;
+RECT        rc;
 
 using namespace CPU;
 #define FPS_LOG __Log2
@@ -76,6 +81,89 @@ void CleanupRoutine()
 	
 	if(d3d)
 		d3d->Release();			//close and release directx
+}
+
+int SaveIni(){
+	
+	//fopen_s(&iniFile, "./refchip16.ini","w+");     //Open the file, args r = read, b = binary
+
+	if (iniFile!=NULL)  //If the file exists
+	{
+		inisettings[0] = Recompiler;
+		inisettings[1] = MenuVSync;
+		inisettings[2] = MenuScale;
+		
+		rewind (iniFile);
+		
+		CPU_LOG("Saving Ini %x and %x and %x pos %d\n", Recompiler, MenuVSync, MenuScale, ftell(iniFile));
+		fwrite(&inisettings,1,4,iniFile); //Read in the file
+		CPU_LOG("pos %d\n", Recompiler, MenuVSync, MenuScale, ftell(iniFile));
+		fclose(iniFile); //Close the file
+		fclose(LogFile); 
+		return 0;
+	} 
+	else
+	{
+		CPU_LOG("Error Saving Ini\n");
+		//User cancelled, either way, do nothing.
+		fclose(LogFile); 
+		return 1;
+	}	
+}
+
+int LoadIni(){
+
+	fopen_s(&iniFile, "./refchip16.ini","rb");     //Open the file, args r+ = read, b = binary
+
+	if (iniFile!=NULL)  //If the file exists
+	{
+		
+		fread (&inisettings,1,4,iniFile); //Read in the file
+		//fclose (iniFile); //Close the file
+		if(ftell (iniFile) > 0) // Identify if the inifile has just been created
+		{
+			Recompiler = inisettings[0];
+			MenuVSync = inisettings[1];
+			MenuScale = inisettings[2];
+			switch(MenuScale)
+			{
+			case 1:
+				SCREEN_WIDTH = 320;
+				SCREEN_HEIGHT = 250;
+				break;
+			case 2:
+				SCREEN_WIDTH = 640;
+				SCREEN_HEIGHT = 490;
+				break;
+			case 3:
+				SCREEN_WIDTH = 960;
+				SCREEN_HEIGHT = 730;
+				break;
+			}
+		}
+		else
+		{
+			//Defaults
+			Recompiler = 1;
+			MenuVSync = 1;
+			MenuScale = 1;
+			SCREEN_WIDTH = 320;
+			SCREEN_HEIGHT = 240;
+			CPU_LOG("Defaults loaded, new ini\n");
+		}
+		
+		CPU_LOG("Loading Ini %x and %x and %x\n", Recompiler, MenuVSync, MenuScale);
+		fclose(iniFile); //Close the file
+		fopen_s(&iniFile, "./refchip16.ini","wb+");     //Open the file, args r+ = read, b = binary
+		return 0;
+	} 
+	else
+	{
+		CPU_LOG("Error Loading Ini\n");
+		fopen_s(&iniFile, "./refchip16.ini","wb+");     //Open the file, args r+ = read, b = binary
+		//User cancelled, either way, do nothing.
+		return 1;
+	}	
 }
 
 void UpdateTitleBar(HWND hWnd)
@@ -104,15 +192,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.lpszClassName = "WindowClass";
 
 	RegisterClassEx(&wc);
-	
-	
-
+	OpenLog();
+	LoadIni();
+	// calculate the size of the client area
+    RECT wr = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};    // set the size, but not the position
+    AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);    // adjust the size
 	hWnd = CreateWindowEx(NULL, "WindowClass", NULL,
-	WS_CAPTION|WS_MINIMIZE|WS_SYSMENU, 100, 100, SCREEN_WIDTH, SCREEN_HEIGHT,
+	WS_CAPTION|WS_MINIMIZE|WS_SYSMENU, 100, 100, wr.right - wr.left, wr.bottom - wr.top,
 	NULL, NULL, hInstance, NULL);
 	UpdateTitleBar(hWnd); //Set the title stuffs
 	ShowWindow(hWnd, nCmdShow);
-	OpenLog();
+
+
+	SCREEN_HEIGHT = wr.bottom - wr.top;
+	SCREEN_WIDTH = wr.right - wr.left;
 	RefChip16Input = new InputDevice(hInstance, hWnd);
 	RefChip16Sound = new SoundDevice();
 	RefChip16Emitter = new Emitter();
@@ -158,6 +251,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				//framenumber++;
 				//CPU_LOG("Time for frame %d to render %d cycles\n", framenumber, vsyncend - vsyncstart);
 				VBlank = 1;
+				RedrawLastScreen();
 				EndDrawing();
 				nextvsync += (1000000 / 60);
 
@@ -182,7 +276,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				VBlank = 0;
 			}
 
-			if(Recompiler == true)
+			if(Recompiler == 1)
 			{
 				RefChip16RecCPU->EnterRecompiledCode();
 			}
@@ -203,6 +297,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #define		ID_INTERPRETER 1004
 #define		ID_RECOMPILER  1005
 #define		ID_VSYNC	   1006
+#define     ID_WINDOWX1    1007
+#define     ID_WINDOWX2    1008
+#define     ID_WINDOWX3    1009
 
 void ToggleRecompilerState(HWND hWnd)
 {
@@ -221,6 +318,46 @@ void ToggleRecompilerState(HWND hWnd)
 	// Move this state to the Recompiler flag
 	SetMenuItemInfo(hSubMenu2, ID_RECOMPILER, FALSE, &mii); 
 
+}
+
+void ChangeScale(HWND hWnd, int ID)
+{
+	HMENU hmenuBar = GetMenu(hWnd); 
+	MENUITEMINFO mii; 
+
+	memset( &mii, 0, sizeof( MENUITEMINFO ) );
+	mii.cbSize = sizeof(MENUITEMINFO);
+	mii.fMask = MIIM_STATE;    // information to get 
+	//Grab Recompiler state
+	GetMenuItemInfo(hSubMenu2, 1006 + MenuScale, FALSE, &mii);
+	// Move this state to the Interpreter flag
+	SetMenuItemInfo(hSubMenu2, ID, FALSE, &mii);
+	// Toggle the checked state. 
+	mii.fState ^= MFS_CHECKED; 
+	// Move this state to the Recompiler flag
+	SetMenuItemInfo(hSubMenu2, 1006 + MenuScale, FALSE, &mii); 
+	MenuScale = ID - 1006;
+
+	switch(MenuScale)
+	{
+	case 1:
+		SCREEN_WIDTH = 320;
+		SCREEN_HEIGHT = 250;
+		break;
+	case 2:
+		SCREEN_WIDTH = 640;
+		SCREEN_HEIGHT = 490;
+		break;
+	case 3:
+		SCREEN_WIDTH = 960;
+		SCREEN_HEIGHT = 730;
+		break;
+	}
+
+	RECT wr = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};    // set the size, but not the position
+    AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);    // adjust the size
+
+	SetWindowPos(hWnd,0,100,100,wr.right - wr.left,wr.bottom - wr.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
 }
 
 void ToggleVSync(HWND hWnd)
@@ -254,9 +391,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		  hSubMenu2 = CreatePopupMenu();
 		  AppendMenu(hSubMenu, MF_STRING, ID_OPEN, "&Open");
 		  AppendMenu(hSubMenu, MF_STRING, ID_EXIT, "E&xit");
-		  AppendMenu(hSubMenu2, MF_STRING, ID_INTERPRETER, "Enable &Interpreter");
-		  AppendMenu(hSubMenu2, MF_STRING|MF_CHECKED, ID_RECOMPILER, "Enable &Recompiler");
-		  AppendMenu(hSubMenu2, MF_STRING|MF_CHECKED, ID_VSYNC, "&Vertical Sync");
+		  CPU_LOG("MenuScale %x", MenuScale);
+		  AppendMenu(hSubMenu2, MF_STRING| (Recompiler == 0 ? MF_CHECKED : 0), ID_INTERPRETER, "Enable &Interpreter");
+		  AppendMenu(hSubMenu2, MF_STRING| (Recompiler == 1 ? MF_CHECKED : 0), ID_RECOMPILER, "Enable &Recompiler");
+		  AppendMenu(hSubMenu2, MF_STRING| (MenuVSync == 1 ? MF_CHECKED : 0), ID_VSYNC, "&Vertical Sync");
+		  AppendMenu(hSubMenu2, MF_STRING| (MenuScale == 1 ? MF_CHECKED : 0), ID_WINDOWX1, "WindowScale 320x240 (x&1)");
+		  AppendMenu(hSubMenu2, MF_STRING| (MenuScale == 2 ? MF_CHECKED : 0), ID_WINDOWX2, "WindowScale 640x480 (x&2)");
+		  AppendMenu(hSubMenu2, MF_STRING| (MenuScale == 3 ? MF_CHECKED : 0), ID_WINDOWX3, "WindowScale 960x720 (x&3)");
 		  InsertMenu(hMenu, 0, MF_POPUP|MF_BYPOSITION, (UINT_PTR)hSubMenu, "File");
 		  InsertMenu(hMenu, 1, MF_POPUP|MF_BYPOSITION, (UINT_PTR)hSubMenu2, "Settings");
 		  InsertMenu(hMenu, 2, MF_STRING, ID_ABOUT, "&About");
@@ -294,19 +435,19 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			}			
 			break;
 		  case ID_INTERPRETER :
-			if(Recompiler == true)
+			if(Recompiler == 1)
 			{			
 				ToggleRecompilerState(hWnd);
-				Recompiler = false;
+				Recompiler = 0;
 				UpdateTitleBar(hWnd); //Set the title stuffs
 			 }
 			 break;
 		  case ID_RECOMPILER :
 			 
-			 if(Recompiler == false)
+			 if(Recompiler == 0)
 			 {
 				 ToggleRecompilerState(hWnd);
-				 Recompiler = true;
+				 Recompiler = 1;
 				 UpdateTitleBar(hWnd); //Set the title stuffs
 			 }
 			 break;
@@ -314,6 +455,15 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			  ToggleVSync(hWnd);
 			  ResetDevice(hWnd);
 			 break;
+		  case ID_WINDOWX1:
+			  ChangeScale(hWnd, ID_WINDOWX1);
+			  break;
+		  case ID_WINDOWX2:
+			  ChangeScale(hWnd, ID_WINDOWX2);
+			  break;
+		  case ID_WINDOWX3:
+			  ChangeScale(hWnd, ID_WINDOWX3);
+			  break;
 		  case ID_ABOUT :
 				 MessageBox(hWnd, "RefChip16 V1.1 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
@@ -332,6 +482,18 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 					return 0;
 				}
 				break;
+				case VK_HOME:
+				{
+					SCREEN_HEIGHT++;
+					SetWindowPos(hWnd,0,100,100,SCREEN_WIDTH,SCREEN_HEIGHT,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+					return 0;
+				}
+				case VK_END:
+				{
+					SCREEN_WIDTH++;
+					SetWindowPos(hWnd,0,100,100,SCREEN_WIDTH,SCREEN_HEIGHT,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+					return 0;
+				}
 								
 				default:
 					return 0;
@@ -341,6 +503,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case WM_DESTROY:
 		{
 			PostQuitMessage(0);
+			SaveIni();
 			return 0;
 		} 
 		break;
@@ -348,3 +511,4 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 
 	return DefWindowProc (hWnd, message, wParam, lParam);
 }
+

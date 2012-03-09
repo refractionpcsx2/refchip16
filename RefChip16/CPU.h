@@ -83,8 +83,8 @@ class CPU
 		extern unsigned long cycles;
 		extern unsigned long nextvsync;
 		extern bool Running;
-		extern bool Recompiler;
-
+		extern char Recompiler;
+		
 		unsigned short __fastcall GenerateRandom();
 		void FetchOpCode();
 		void ExecuteOp();
