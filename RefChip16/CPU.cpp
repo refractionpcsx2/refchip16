@@ -57,6 +57,7 @@ unsigned long cycles;
 unsigned long nextvsync;
 bool Running = false;
 char Recompiler = 1;
+bool drawing = false;
 FILE * LogFile; 
 unsigned short StackPTR;
 unsigned short GPR[16];
@@ -215,6 +216,7 @@ void CpuCore()
 		SpriteSet.BackgroundColour = OpCode & 0xf;
 
 		ClearRenderTarget();
+		StartDrawing();
 		RedrawLastScreen();
 		
 		break;
@@ -227,6 +229,7 @@ void CpuCore()
 		X = REG_X;
 		Y = REG_Y;
 		MemAddr = IMMEDIATE;
+		StartDrawing();
 		//CPU_LOG("Draw Sprite at Cords X = %d Y = %d, Mem = %x\n", X, Y, MemAddr);
 		DrawSprite(MemAddr, X, Y);
 		break;
@@ -234,6 +237,7 @@ void CpuCore()
 		X = REG_X;
 		Y = REG_Y;
 		MemAddr = REG_Z;
+		StartDrawing();
 		//CPU_LOG("Draw Sprite at Cords from reg %x X = %d Y = %d, Mem = %x\n", (OpCode >> 8) & 0xf, X, Y, MemAddr);
 		DrawSprite(MemAddr, X, Y);
 		break;
@@ -926,7 +930,7 @@ void Reset()
 
 	D3DReset();
 	ClearRenderTarget();
-	StartDrawing();
+	//StartDrawing();
 	RefChip16Sound->StopVoice();
 	RefChip16Sound->SetADSR(0, 0, 15, 0, 15, TRIANGLE);
 	

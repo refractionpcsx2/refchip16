@@ -319,6 +319,7 @@ void RecCPU::recCpuCore()
 		RefChip16Emitter->MOV16ItoM((unsigned int)&SpriteSet.BackgroundColour, recOpCode & 0xf);
 		ClearLiveRegister(0xffff, true);
 		RefChip16Emitter->CALL(ClearRenderTarget);
+		RefChip16Emitter->CALL(StartDrawing);
 		RefChip16Emitter->CALL(RedrawLastScreen);
 
 		RefChip16Emitter->x86SetJ32( j32Ptr[0] );
