@@ -41,8 +41,10 @@ RECT m_statusbox;
 
 int width;
 int height;
-bool MenuVSync = true;
-bool ActualVSync = true;
+char MenuVSync = 1;
+char ActualVSync = 1;
+
+
 unsigned char ScreenBuffer[320][240];
 Sprite SpriteSet;
 bool drawing = false;
@@ -123,10 +125,10 @@ void GenerateVertexList()
 	//Generate the verticies for each of the colours
 	for(i = 0; i < 16; i++)
 	{
-		pixel[i*4].X       = -0.5f;	pixel[i*4].Y	   = 0.5f;  pixel[i*4].Z       = 10.0f;  pixel[i*4].COLOR  	 = pixelcolours[i];
-		pixel[1 + (i*4)].X = 0.5f;  pixel[1 + (i*4)].Y = 0.5f;  pixel[1 + (i*4)].Z = 10.0f;  pixel[1 + (i*4)].COLOR = pixelcolours[i];
-		pixel[2 + (i*4)].X = -0.5f;  pixel[2 + (i*4)].Y = -0.5f;  pixel[2 + (i*4)].Z = 10.0f;  pixel[2 + (i*4)].COLOR = pixelcolours[i];
-		pixel[3 + (i*4)].X = 0.5f;  pixel[3 + (i*4)].Y = -0.5f;  pixel[3 + (i*4)].Z = 10.0f; pixel[3 + (i*4)].COLOR = pixelcolours[i];
+		pixel[i*4].X       = 0.0f;	pixel[i*4].Y	   = 0.0f;  pixel[i*4].Z       = 10.0f;  pixel[i*4].COLOR  	 = pixelcolours[i];
+		pixel[1 + (i*4)].X = 0.0f;  pixel[1 + (i*4)].Y = 1.0f;  pixel[1 + (i*4)].Z = 10.0f;  pixel[1 + (i*4)].COLOR = pixelcolours[i];
+		pixel[2 + (i*4)].X = 1.0f;  pixel[2 + (i*4)].Y = 0.0f;  pixel[2 + (i*4)].Z = 10.0f;  pixel[2 + (i*4)].COLOR = pixelcolours[i];
+		pixel[3 + (i*4)].X = 1.0f;  pixel[3 + (i*4)].Y = 1.0f;  pixel[3 + (i*4)].Z = 10.0f; pixel[3 + (i*4)].COLOR = pixelcolours[i];
 		
 	}
 
@@ -185,7 +187,11 @@ void InitDisplay(int width, int height, HWND hWnd)
     d3dpp.Windowed = TRUE;
     d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
     d3dpp.hDeviceWindow = hWnd;
-    d3dpp.BackBufferFormat = D3DFMT_A8R8G8B8;
+	d3dpp.BackBufferFormat = D3DFMT_A8R8G8B8;
+    d3dpp.BackBufferWidth = 320;
+    d3dpp.BackBufferHeight = 240;
+   // d3dpp.EnableAutoDepthStencil = TRUE;
+   // d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
 
 	if(!MenuVSync) d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 	else d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
@@ -193,7 +199,7 @@ void InitDisplay(int width, int height, HWND hWnd)
     d3d->CreateDevice(D3DADAPTER_DEFAULT,
                       D3DDEVTYPE_HAL,
                       hWnd,
-                      D3DCREATE_HARDWARE_VERTEXPROCESSING,
+                      D3DCREATE_SOFTWARE_VERTEXPROCESSING,
                       &d3dpp,
                       &d3ddev);
 
@@ -203,11 +209,11 @@ void InitDisplay(int width, int height, HWND hWnd)
 	d3ddev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE); // for some reason this culls by default?! wtf
     d3ddev->SetRenderState(D3DRS_LIGHTING, FALSE);    // turn off the 3D lighting
     d3ddev->SetRenderState(D3DRS_ZENABLE, FALSE);    // turn on the z-buffer
-
+	d3ddev->SetRenderState(D3DRS_VERTEXBLEND, D3DVBF_3WEIGHTS);
 	D3DXMATRIX Ortho2D;	
     D3DXMATRIX Identity;
     
-    D3DXMatrixOrthoLH(&Ortho2D, 320.0f, 240.0f, 1.0f, 100.0f);
+    D3DXMatrixOrthoLH(&Ortho2D, 320.0f, -240.0f, 1.0f, 100.0f);
     D3DXMatrixIdentity(&Identity);
 
     d3ddev->SetTransform(D3DTS_PROJECTION, &Ortho2D);
@@ -338,7 +344,7 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 			{
 				if(ScreenBuffer[j][i] != 0) CPU::Flag.CarryBorrow = 1;	//Check collision
 
-				D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, 120.0f-(float)i, 1.0f);
+				D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
 				d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
 				d3ddev->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, curpixel*4, 0, 4, 0, 2); 
 			}
@@ -364,13 +370,13 @@ void RedrawLastScreen()
 	D3DXMATRIX matTranslate;
 	
 	if(drawing == false) return;
-	//FPS_LOG("Starting redraw");
+	FPS_LOG("Starting redraw");
 	
 	for(int i = 239; i != 0; --i){
 		for(int j = 319; j != 0; --j){	
 			if(ScreenBuffer[j][i] != 0)
 			{
-				D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, 120.0f-(float)i, 1.0f);
+				D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
 				d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
 				d3ddev->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, (ScreenBuffer[j][i])*4, 0, 4, 0, 2); 
 			}
