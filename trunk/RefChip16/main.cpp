@@ -482,20 +482,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 					DestroyWindow(hWnd);
 					return 0;
 				}
-				break;
-				case VK_HOME:
-				{
-					SCREEN_HEIGHT++;
-					SetWindowPos(hWnd,0,100,100,SCREEN_WIDTH,SCREEN_HEIGHT,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
-					return 0;
-				}
-				case VK_END:
-				{
-					SCREEN_WIDTH++;
-					SetWindowPos(hWnd,0,100,100,SCREEN_WIDTH,SCREEN_HEIGHT,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
-					return 0;
-				}
-								
+				break;								
 				default:
 					return 0;
 			}
