@@ -21,6 +21,7 @@
 #define _RECCPU_H
 #include "Emitter.h"
 
+void __fastcall recWriteMem(unsigned short location, unsigned short value);
 
 class RecCPU
 {

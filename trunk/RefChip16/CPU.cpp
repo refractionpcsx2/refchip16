@@ -68,12 +68,7 @@ unsigned short __fastcall recReadMem(unsigned short memloc){
 	return ((Memory[(memloc+1) & 0xffff] << 8) | (Memory[(memloc) & 0xffff]));
 }
 
-void __fastcall recWriteMem(unsigned short location, unsigned short value)
-{
-	//CPU_LOG("rec Writing to %x with value %x", location, value);
-	Memory[location & 0xffff] = value & 0xff;
-	Memory[(location+1) & 0xffff] = value>>8;
-}
+
 
 
 unsigned short ReadMem(unsigned long location){
@@ -93,11 +88,6 @@ void WriteMem(unsigned short location, unsigned short value){
 	//CPU_LOG("16bit write to %x with %x", location, value);
 	Memory[location & 0xffff] = value & 0xff;
 	Memory[(location+1) & 0xffff] = value>>8;
-}
-
-void WriteMem8(unsigned short location, unsigned char value){
-	//CPU_LOG("8bit write to %x with %x", location, value);
-	Memory[location & 0xffff] = value;
 }
 
 
@@ -277,8 +267,8 @@ void CpuCore()
 		//CPU_LOG("1500hz sound for %d milliseconds PC %x\n", IMMEDIATE, PC);
 		break;
 	case 0xD: //Play tone specified in X for IMMEDIATE ms
-		CPU_LOG("%dhz sound for %d milliseconds PC %x\n", REG_X, IMMEDIATE, PC);
-		RefChip16Sound->GenerateHz(REG_X, IMMEDIATE);
+		CPU_LOG("%dhz sound for %d milliseconds PC %x\n", ReadMem(REG_X), IMMEDIATE, PC);
+		RefChip16Sound->GenerateHz(ReadMem(REG_X), IMMEDIATE);
 		break;
 	case 0xE: //Set ADSR
 		RefChip16Sound->SetADSR(Op_Y, Op_X, ((OpCode >> 4) & 0xf), Op_Z, ((OpCode >> 12) & 0xf), ((OpCode >> 8) & 0xf));
