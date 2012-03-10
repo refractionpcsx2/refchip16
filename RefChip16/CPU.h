@@ -62,7 +62,7 @@ class CPU
 		void __Log2(char *fmt, ...);
 
 		unsigned short __fastcall recReadMem(unsigned short memloc);
-		void __fastcall recWriteMem(unsigned short location, unsigned short value);
+		
 		unsigned short ReadMem(unsigned long location);
 		unsigned short ReadMemReverse(unsigned long location);
 		unsigned char ReadMem8(unsigned long location);

@@ -70,7 +70,7 @@ struct CurrentInst PCIndex[0xffff]; //0xFFFF >> 2 (PC increments by 4)
 unsigned short recPC;
 unsigned int recOpCode;
 int cpubranch = 0;
-
+unsigned short RecMemory[64*1024];
 using namespace CPU;
 
 RecCPU::RecCPU()
@@ -143,6 +143,15 @@ unsigned char* __fastcall RecCPU::ExecuteBlock()
 	return (unsigned char*)PCIndex[recPC].StartPC;
 }
 
+void __fastcall recWriteMem(unsigned short location, unsigned short value)
+{
+	
+	CPU_LOG("rec Writing to %x with value %x startpc %x recmem %x\n", location, value, PCIndex[RecMemory[location]].StartPC, RecMemory[location]);
+	PCIndex[RecMemory[location]].StartPC = NULL;
+	Memory[location & 0xffff] = value & 0xff;
+	Memory[(location+1) & 0xffff] = value>>8;
+}
+
 
 unsigned char* RecCPU::RecompileBlock()
 {
@@ -152,7 +161,7 @@ unsigned char* RecCPU::RecompileBlock()
 	{
 		
 		recOpCode = ReadMem(PC + 2) | (ReadMem(PC) << 16);
-		
+		RecMemory[PC] = recPC;
 		PC+=4;
 		PCIndex[recPC].BlockCycles++;
 		PCIndex[recPC].EndPC = PC;
@@ -173,7 +182,6 @@ unsigned char* RecCPU::RecompileBlock()
 			case 0xB: recCpuShift(); break;
 			case 0xC: recCpuPushPop(); break;
 			case 0xD: recCpuPallate(); break;
-			case 0xE: recCpuPallate(); break;
 
 			default:
 				CPU_LOG("Unknown Op\n");

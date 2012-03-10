@@ -115,10 +115,10 @@ void SoundDevice::SetADSR(int Attack, int Decay, int Sustain, int Release, int V
 	DSPSettings.CurAttack = Attack;
 	DSPSettings.CurDecay = Decay;
 	DSPSettings.CurSustain = Sustain;
-	DSPSettings.CurRelease = Attack;
+	DSPSettings.CurRelease = Release;
 	DSPSettings.Amplitude = (int)(DSPSettings.Sustain[Volume] * MAX_VOLUME);
 	DSPSettings.WaveformType = Type;
-	CPU_LOG("ADSR Set A %d ms, D %d ms, S %d, R %d ms, Volume %d, Wavetype %d\n", DSPSettings.Attack[Attack], DSPSettings.Decay[Decay], (int)DSPSettings.Sustain[Sustain], DSPSettings.Release[Release], DSPSettings.Amplitude, DSPSettings.WaveformType);
+	CPU_LOG("ADSR Set A %d ms, D %d ms, S %d, R %d ms, Volume %d, Wavetype %d(%d)\n", DSPSettings.Attack[Attack], DSPSettings.Decay[Decay], (int)DSPSettings.Sustain[Sustain], DSPSettings.Release[Release], DSPSettings.Amplitude, DSPSettings.WaveformType, Type);
 }
 short SoundDevice::GenerateTriangleSample()
 {
@@ -226,7 +226,7 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 		break;
 	}
 	//pSourceVoice->Stop( 0 );
-	CPU_LOG("Processing Sound, A %dms D %dms S %d R %dms Period %dms Rate %dhz\n", DSPSettings.Attack[DSPSettings.CurAttack], DSPSettings.Decay[DSPSettings.CurDecay], (int)(DSPSettings.Amplitude * DSPSettings.Sustain[DSPSettings.CurSustain]), DSPSettings.Release[DSPSettings.CurRelease], Period, Rate);
+	CPU_LOG("Processing Sound, A %dms D %dms S %d R %dms Period %dms Rate %dhz Type %d\n", DSPSettings.Attack[DSPSettings.CurAttack], DSPSettings.Decay[DSPSettings.CurDecay], (int)(DSPSettings.Amplitude * DSPSettings.Sustain[DSPSettings.CurSustain]), DSPSettings.Release[DSPSettings.CurRelease], Period, Rate, DSPSettings.WaveformType);
 	
 	
 	//Attack first
