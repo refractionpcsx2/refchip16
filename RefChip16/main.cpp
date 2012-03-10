@@ -130,15 +130,15 @@ int LoadIni(){
 			{
 			case 1:
 				SCREEN_WIDTH = 320;
-				SCREEN_HEIGHT = 250;
+				SCREEN_HEIGHT = 240;
 				break;
 			case 2:
 				SCREEN_WIDTH = 640;
-				SCREEN_HEIGHT = 490;
+				SCREEN_HEIGHT = 480;
 				break;
 			case 3:
 				SCREEN_WIDTH = 960;
-				SCREEN_HEIGHT = 730;
+				SCREEN_HEIGHT = 720;
 				break;
 			}
 		}
@@ -169,7 +169,7 @@ int LoadIni(){
 
 void UpdateTitleBar(HWND hWnd)
 {
-	sprintf_s(headingstr, "RefChip16 V1.3 FPS: %d Recompiler %s", fps, Recompiler ? "Enabled" : "Disabled");
+	sprintf_s(headingstr, "RefChip16 V1.31 FPS: %d Recompiler %s", fps, Recompiler ? "Enabled" : "Disabled");
 	SetWindowText(hWnd, headingstr);
 }
 // The entry point for any Windows program
@@ -197,7 +197,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	LoadIni();
 	// calculate the size of the client area
     RECT wr = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};    // set the size, but not the position
-    AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);    // adjust the size
+    AdjustWindowRect(&wr, WS_CAPTION|WS_MINIMIZE|WS_SYSMENU, TRUE);    // adjust the size
 	hWnd = CreateWindowEx(NULL, "WindowClass", NULL,
 	WS_CAPTION|WS_MINIMIZE|WS_SYSMENU, 100, 100, wr.right - wr.left, wr.bottom - wr.top,
 	NULL, NULL, hInstance, NULL);
@@ -466,7 +466,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			  ChangeScale(hWnd, ID_WINDOWX3);
 			  break;
 		  case ID_ABOUT :
-				 MessageBox(hWnd, "RefChip16 V1.3 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
+				 MessageBox(hWnd, "RefChip16 V1.31 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
 		  case ID_EXIT :
 			 DestroyWindow(hWnd);
