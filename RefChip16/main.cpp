@@ -343,20 +343,20 @@ void ChangeScale(HWND hWnd, int ID)
 	{
 	case 1:
 		SCREEN_WIDTH = 320;
-		SCREEN_HEIGHT = 250;
+		SCREEN_HEIGHT = 240;
 		break;
 	case 2:
 		SCREEN_WIDTH = 640;
-		SCREEN_HEIGHT = 490;
+		SCREEN_HEIGHT = 480;
 		break;
 	case 3:
 		SCREEN_WIDTH = 960;
-		SCREEN_HEIGHT = 730;
+		SCREEN_HEIGHT = 720;
 		break;
 	}
 
 	RECT wr = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};    // set the size, but not the position
-    AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);    // adjust the size
+   AdjustWindowRect(&wr, WS_CAPTION|WS_MINIMIZE|WS_SYSMENU, TRUE);    // adjust the size
 
 	SetWindowPos(hWnd,0,100,100,wr.right - wr.left,wr.bottom - wr.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
 }
