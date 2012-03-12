@@ -19,6 +19,7 @@
 
 #include "CPU.h"
 #include "D3DApp.h"
+#include "Shaders.h"
 using namespace CPU;
 // include the Direct3D Library files
 #pragma comment (lib, "d3d9.lib")
@@ -34,6 +35,27 @@ LPDIRECT3D9 d3d;
 LPDIRECT3DDEVICE9 d3ddev;
 LPDIRECT3DVERTEXBUFFER9 v_buffer;
 LPDIRECT3DINDEXBUFFER9 i_buffer;
+LPDIRECT3DVERTEXDECLARATION9 vertexDecl = NULL;
+LPDIRECT3DVERTEXSHADER9      vertexShader = NULL;
+LPD3DXCONSTANTTABLE          constantTable = NULL;
+D3DXMATRIX Ortho2D;	
+D3DXMATRIX Identity;
+
+
+LPD3DXBUFFER                 code = NULL; 
+
+D3DVERTEXELEMENT9 decl[] = 
+	{
+		{0,  0,  D3DDECLTYPE_FLOAT3,   D3DDECLMETHOD_DEFAULT, 
+										  D3DDECLUSAGE_POSITION, 0},
+		{0, 12,  D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, 
+											D3DDECLUSAGE_COLOR, 0} ,
+		{0, 16,  D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, 
+										  D3DDECLUSAGE_COLOR, 1},
+		D3DDECL_END()
+	};
+extern const char* vertexshade;
+
 LPD3DXFONT m_font;
 D3DCOLOR StatusFontColor;
 D3DPRESENT_PARAMETERS d3dpp;
@@ -109,12 +131,12 @@ void StartDrawing()
 	
 	drawing = true;
 	d3ddev->BeginScene();
-	d3ddev->SetFVF(CUSTOMFVF);
+
+	d3ddev->SetVertexDeclaration(vertexDecl);
+    d3ddev->SetVertexShader(vertexShader);
 
 	// select the vertex buffer to display
     d3ddev->SetStreamSource(0, v_buffer, 0, sizeof(CHIP16VERTEX));
-	// select the vertex and index buffers to use
-	d3ddev->SetIndices(i_buffer);
 
 }
 void GenerateVertexList()
@@ -133,21 +155,11 @@ void GenerateVertexList()
 		
 	}
 
-
-	//Generate the index
-	for(i = 0; i < 16; i++)
-	{
-		indices[j++] = i++;
-		indices[j++] = i++;
-		indices[j++] = i++;
-		indices[j++] = i++;
-	}
-
 	// create a vertex buffer interface called v_buffer
     d3ddev->CreateVertexBuffer(sizeof(pixel),
-                               0,
+                               D3DUSAGE_WRITEONLY,
                                CUSTOMFVF,
-                               D3DPOOL_MANAGED,
+                               D3DPOOL_DEFAULT,
                                &v_buffer,
                                NULL);
 
@@ -160,18 +172,9 @@ void GenerateVertexList()
     memcpy(pVoid, pixel, sizeof(pixel));
     v_buffer->Unlock();
 
-	// create a index buffer interface called i_buffer
-    d3ddev->CreateIndexBuffer(sizeof(indices),
-                              0,
-                              D3DFMT_INDEX16,
-                              D3DPOOL_MANAGED,
-                              &i_buffer,
-                              NULL);
+	d3ddev->CreateVertexDeclaration(decl, &vertexDecl);
 
-    // lock i_buffer and load the indices into it
-    i_buffer->Lock(0, 0, (void**)&pVoid, 0);
-    memcpy(pVoid, indices, sizeof(indices));
-    i_buffer->Unlock(); 
+
 }
 
 
@@ -180,7 +183,7 @@ void InitDisplay(int width, int height, HWND hWnd)
 	d3d = NULL;
 	d3ddev = NULL;
 	v_buffer = NULL;
-	i_buffer = NULL;
+	HRESULT result;
 
 	d3d = Direct3DCreate9(D3D_SDK_VERSION);
 	
@@ -206,13 +209,29 @@ void InitDisplay(int width, int height, HWND hWnd)
 
 //
 	GenerateVertexList();
+        
+	result = D3DXCompileShader(vertexshade,    //filepath
+                                   (UINT)strlen(vertexshade),            //macro's
+                                   NULL,
+								NULL,
+								"vs_main",
+								"vs_1_1",  
+								D3DXSHADER_DEBUG, 
+								&code, 
+								NULL, // error messages 
+								&constantTable );
+	if(FAILED(result))
+		MessageBox(hWnd, "Invalid vs code", "Error", MB_OK);
+
+	d3ddev->CreateVertexShader((DWORD*)code->GetBufferPointer(),
+										&vertexShader);
+	code->Release();
 
 	d3ddev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE); // for some reason this culls by default?! wtf
     d3ddev->SetRenderState(D3DRS_LIGHTING, FALSE);    // turn off the 3D lighting
     d3ddev->SetRenderState(D3DRS_ZENABLE, FALSE);    // turn on the z-buffer
 
-	D3DXMATRIX Ortho2D;	
-    D3DXMATRIX Identity;
+	
     
     D3DXMatrixOrthoLH(&Ortho2D, 320.0f, -240.0f, 1.0f, 100.0f);
     D3DXMatrixIdentity(&Identity);
@@ -220,6 +239,12 @@ void InitDisplay(int width, int height, HWND hWnd)
     d3ddev->SetTransform(D3DTS_PROJECTION, &Ortho2D);
     d3ddev->SetTransform(D3DTS_WORLD, &Identity);
     d3ddev->SetTransform(D3DTS_VIEW, &Identity);
+
+	D3DXMATRIXA16 matWorldViewProj = Identity * Identity * Ortho2D;
+        constantTable->SetMatrix(d3ddev,
+                                 "WorldViewProj",
+                                 &matWorldViewProj);
+
 }
 
 void DrawSprite(unsigned short MemAddr, int X, int Y)
@@ -234,7 +259,7 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 	int EndMemSkip = 0;
 	int j;
 	//__int64 count1, count2;
-	
+	D3DXMATRIX matProjView = Identity * Ortho2D;
 	unsigned char curpixel;
 
 	//QueryPerformanceCounter((LARGE_INTEGER *)&count1);
@@ -349,7 +374,11 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 				{					
 					D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
 					d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
-					d3ddev->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, curpixel*4, 0, 4, 0, 2);
+					D3DXMATRIXA16 matWorldViewProj = matTranslate * matProjView;
+					constantTable->SetMatrix(d3ddev,
+                                 "WorldViewProj",
+                                 &matWorldViewProj);
+					d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, curpixel*4, 2);
 					
 				}
 			}
@@ -373,7 +402,7 @@ void RedrawLastScreen()
 {
 	
 	D3DXMATRIX matTranslate;
-	
+	D3DXMATRIX matProjView = Identity * Ortho2D;
 	if(drawing == false) return;
 	//FPS_LOG("Starting redraw");
 	
@@ -383,7 +412,11 @@ void RedrawLastScreen()
 			{
 				D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
 				d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
-				d3ddev->DrawIndexedPrimitive(D3DPT_TRIANGLESTRIP, (ScreenBuffer[j][i])*4, 0, 4, 0, 2); 
+				D3DXMATRIXA16 matWorldViewProj = matTranslate * matProjView;
+				constantTable->SetMatrix(d3ddev,
+                                 "WorldViewProj",
+                                 &matWorldViewProj);
+				d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, ScreenBuffer[j][i]*4, 2);
 			}
 		}				
 	}
@@ -414,6 +447,24 @@ void ResetDevice(HWND hWnd)
 	{
 		if (onDeviceReset) onDeviceReset();
 	
+		//clean up shaders (NEW)
+		if(constantTable)
+		{
+			constantTable->Release();
+			constantTable = NULL;
+		}
+
+		if(vertexShader)
+		{
+			vertexShader->Release();
+			vertexShader = NULL;
+		}
+
+		if(vertexDecl)
+		{
+			vertexDecl->Release();
+			vertexDecl = NULL;
+		}
 		if(v_buffer)
 			v_buffer->Release();    // close and release the vertex buffer
 

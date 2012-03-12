@@ -286,7 +286,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				CPULoop();
 				cycles += 1;
 			}
-		}		
+		}	
+		else Sleep(100);
 	}
 	CleanupRoutine();
 	return (int)msg.wParam;

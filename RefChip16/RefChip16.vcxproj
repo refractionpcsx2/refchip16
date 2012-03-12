@@ -141,6 +141,7 @@
     <ClInclude Include="InputDevice.h" />
     <ClInclude Include="D3DApp.h" />
     <ClInclude Include="RecCPU.h" />
+    <ClInclude Include="Shaders.h" />
     <ClInclude Include="Sound.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
