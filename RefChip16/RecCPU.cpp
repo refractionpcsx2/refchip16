@@ -320,17 +320,17 @@ void RecCPU::recCpuCore()
 		break;
 	case 0x3: //Background Colour
 		//CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
-		RefChip16Emitter->CMP16ItoM((unsigned int)&SpriteSet.BackgroundColour, recOpCode & 0xf);
-		j32Ptr[0] = RefChip16Emitter->JE32(0); //Jump if already set, avoid redraw
+		//RefChip16Emitter->CMP16ItoM((unsigned int)&SpriteSet.BackgroundColour, recOpCode & 0xf);
+		//j32Ptr[0] = RefChip16Emitter->JE32(0); //Jump if already set, avoid redraw
 
 		//Else set it
 		RefChip16Emitter->MOV16ItoM((unsigned int)&SpriteSet.BackgroundColour, recOpCode & 0xf);
 		ClearLiveRegister(0xffff, true);
 		RefChip16Emitter->CALL(ClearRenderTarget);
-		RefChip16Emitter->CALL(StartDrawing);
+		//RefChip16Emitter->CALL(StartDrawing);
 		//RefChip16Emitter->CALL(RedrawLastScreen);
 
-		RefChip16Emitter->x86SetJ32( j32Ptr[0] );
+		//RefChip16Emitter->x86SetJ32( j32Ptr[0] );
 		break;
 	case 0x4: // Set Sprite H/W
 		RefChip16Emitter->MOV16ItoM((unsigned int)&SpriteSet.Height, (recOpCode >> 8) & 0xFF);
