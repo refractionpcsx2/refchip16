@@ -320,17 +320,11 @@ void RecCPU::recCpuCore()
 		break;
 	case 0x3: //Background Colour
 		//CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
-		//RefChip16Emitter->CMP16ItoM((unsigned int)&SpriteSet.BackgroundColour, recOpCode & 0xf);
-		//j32Ptr[0] = RefChip16Emitter->JE32(0); //Jump if already set, avoid redraw
 
-		//Else set it
 		RefChip16Emitter->MOV16ItoM((unsigned int)&SpriteSet.BackgroundColour, recOpCode & 0xf);
 		ClearLiveRegister(0xffff, true);
 		RefChip16Emitter->CALL(ClearRenderTarget);
-		//RefChip16Emitter->CALL(StartDrawing);
-		//RefChip16Emitter->CALL(RedrawLastScreen);
 
-		//RefChip16Emitter->x86SetJ32( j32Ptr[0] );
 		break;
 	case 0x4: // Set Sprite H/W
 		RefChip16Emitter->MOV16ItoM((unsigned int)&SpriteSet.Height, (recOpCode >> 8) & 0xFF);
@@ -409,7 +403,6 @@ void RecCPU::recCpuLoad()
 		ClearLiveRegister(0xffff, (Op_X == GPRStatus.LiveGPRReg) ? false : true);
 		RefChip16Emitter->MOV32ItoR(ECX, IMMEDIATE);
 		RefChip16Emitter->CALL16((int)recReadMem);
-		//RefChip16Emitter->MOV16RtoM((unsigned int)&REG_X, EAX);
 		GPRStatus.GPRIsConst[Op_X] = false;
 		SetLiveRegister(Op_X);
 		break;
@@ -424,7 +417,6 @@ void RecCPU::recCpuLoad()
 		ClearLiveRegister(0xffff, (Op_X == GPRStatus.LiveGPRReg) ? false : true);
 
 		RefChip16Emitter->CALL16((int)recReadMem);
-		//RefChip16Emitter->MOV16RtoM((unsigned int)&REG_X, EAX);
 
 		GPRStatus.GPRIsConst[Op_X] = false;
 		SetLiveRegister(Op_X);
@@ -526,7 +518,6 @@ void RecCPU::recCpuAdd()
 	{
 	//X = X + imm [c,z,o,n]
 	case 0x0:
-		//ClearLiveRegister(0xffff, true);
 		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
 		{
 			int flagsettings = 0;
@@ -553,8 +544,7 @@ void RecCPU::recCpuAdd()
 		}
 		else
 		{
-
-			//RefChip16Emitter->MOV16MtoR(EAX, (unsigned int)&REG_X);		
+	
 			CheckLiveRegister(Op_X, false); //Sets it live, no need to change
 
 			//If Immediate is 0, we dont need to add or alter REG
@@ -563,9 +553,7 @@ void RecCPU::recCpuAdd()
 				MoveLiveRegister(Op_X, ECX);
 				RefChip16Emitter->MOV16ItoR(EDX, IMMEDIATE);
 				
-				RefChip16Emitter->ADD16RtoR(EAX, EDX);
-				//RefChip16Emitter->MOV16MtoR(ECX, (unsigned int)&REG_X);
-				//RefChip16Emitter->MOV16RtoM((unsigned int)&REG_X, EAX);	
+				RefChip16Emitter->ADD16RtoR(EAX, EDX);	
 				SetLiveRegister(Op_X);
 			}
 			else 
@@ -616,7 +604,6 @@ void RecCPU::recCpuAdd()
 			if(Op_X == Op_Y) 
 			{
 				//If we reached here then it is definately not a const
-				//FPS_LOG("ADD X = Y Opt1");
 				CheckLiveRegister(Op_X, false);
 				MoveLiveRegister(Op_X, ECX);
 				RefChip16Emitter->ADD16RtoR(EAX, EAX);
@@ -637,8 +624,6 @@ void RecCPU::recCpuAdd()
 				RefChip16Emitter->ADD16RtoR(EAX, EDX);
 			}
 			
-
-			//RefChip16Emitter->MOV16RtoM((unsigned int)&REG_X, EAX);	
 			GPRStatus.GPRIsConst[Op_X] = false;
 			//Just in case X was a const
 			SetLiveRegister(Op_X);
@@ -677,8 +662,6 @@ void RecCPU::recCpuAdd()
 			if(Op_X == Op_Y) 
 			{
 				//If we reached here then it is definately not a const
-				//FPS_LOG("ADD X = Y Opt2");
-				//RefChip16Emitter->MOV16MtoR(EAX, (unsigned int)&REG_X);
 				CheckLiveRegister(Op_X, (Op_X == Op_Z) ? false : true);
 				MoveLiveRegister(Op_X, ECX);
 				RefChip16Emitter->ADD16RtoR(EAX, EAX);
@@ -699,9 +682,6 @@ void RecCPU::recCpuAdd()
 				RefChip16Emitter->ADD16RtoR(EAX, EDX);
 			}
 			
-
-			//RefChip16Emitter->MOV16RtoM((unsigned int)&REG_Z, EAX);	
-
 			SetLiveRegister(Op_Z);
 			GPRStatus.GPRIsConst[Op_Z] = false;
 		}
@@ -786,7 +766,7 @@ void RecCPU::recCpuSub()
 		else
 		{
 			
-			CheckLiveRegister(Op_X, false);//RefChip16Emitter->MOV16MtoR(EAX, (unsigned int)&REG_X);
+			CheckLiveRegister(Op_X, false);
 			RefChip16Emitter->MOV16ItoR(ECX, IMMEDIATE);
 			
 			
@@ -804,7 +784,6 @@ void RecCPU::recCpuSub()
 		break;
 	//X = X - Y [c,z,o,n]
 	case 0x1:
-		//ClearLiveRegister(0xffff, true);
 		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true && GPRStatus.GPRIsConst[Op_Y] == true)
 		{
 			int flagsettings = 0;
@@ -832,7 +811,6 @@ void RecCPU::recCpuSub()
 		{
 			if(Op_X == Op_Y) 
 			{
-				//FPS_LOG("sub1 X-Y is 0 Setting REG_%d to const %x\n", recOpCode);
 				RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, 0x4);
 				if(CONST_PROP)
 				{
@@ -869,7 +847,7 @@ void RecCPU::recCpuSub()
 				recSUBCheckOVF();
 			
 				SetLiveRegister(Op_X); //In case X was const, we need to make it the live reg
-				//RefChip16Emitter->MOV16RtoM((unsigned int)&REG_X, EAX);
+
 				GPRStatus.GPRIsConst[Op_X] = false;
 				recTestLogic();
 			}
@@ -877,7 +855,6 @@ void RecCPU::recCpuSub()
 		break;
 	//Z = X - Y [c,z,o,n]
 	case 0x2:
-		//ClearLiveRegister(0xffff, true);
 		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true && GPRStatus.GPRIsConst[Op_Y] == true)
 		{
 			int flagsettings = 0;
@@ -906,7 +883,6 @@ void RecCPU::recCpuSub()
 		{
 			if(Op_X == Op_Y) 
 			{
-				//FPS_LOG("sub2 X-Y is 0 Setting REG_%d to const %x\n", recOpCode);
 				RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, 0x4);
 				
 				if(CONST_PROP)
@@ -952,7 +928,6 @@ void RecCPU::recCpuSub()
 		break;
 	//X - imm no store just flags [c,z,o,n]
 	case 0x3:
-		//ClearLiveRegister(0xffff, true);
 		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
 		{
 			int flagsettings = 0;
@@ -976,8 +951,6 @@ void RecCPU::recCpuSub()
 		}
 		else
 		{
-			
-			//if(IMMEDIATE == 0)FPS_LOG("Sub2 IMM is 0\n");
 			CheckLiveRegister(Op_X, true);
 
 			RefChip16Emitter->MOV16ItoR(ECX, IMMEDIATE);
@@ -1022,7 +995,6 @@ void RecCPU::recCpuSub()
 		{
 			if(Op_X == Op_Y) 
 			{
-				//FPS_LOG("sub3 X=Y is 0 Setting REG_%d to const %x\n", recOpCode);
 				RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, 0x4);
 			}
 			else
@@ -1095,7 +1067,6 @@ void RecCPU::recCpuAND()
 	{
 		//X = X & imm [z,n]
 		case 0x0:
-			//if(IMMEDIATE == 0)FPS_LOG("AND1 IMM is 0\n");
 			if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
 			{
 
@@ -1140,7 +1111,6 @@ void RecCPU::recCpuAND()
 		break;
 		//X = X & Y [z,n]
 		case 0x1:
-			//ClearLiveRegister(0xffff, true);
 			if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true && GPRStatus.GPRIsConst[Op_Y] == true)
 			{
 				GPRStatus.GPRConstVal[Op_X] &= GPRStatus.GPRConstVal[Op_Y];
@@ -1154,8 +1124,6 @@ void RecCPU::recCpuAND()
 			{
 				if(Op_X == Op_Y) 
 				{
-					//If we reached here Op_X isnt const
-					//FPS_LOG("AND1 X=Y is 0 %x\n", recOpCode);
 					CheckLiveRegister(Op_X, false);
 				}
 				else
@@ -1191,7 +1159,6 @@ void RecCPU::recCpuAND()
 		break;
 		//Z = X & Y [z,n]
 		case 0x2:
-			//ClearLiveRegister(0xffff, true);
 			if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true && GPRStatus.GPRIsConst[Op_Y] == true)
 			{
 				GPRStatus.GPRConstVal[Op_Z] = GPRStatus.GPRConstVal[Op_X] & GPRStatus.GPRConstVal[Op_Y];
@@ -1208,9 +1175,7 @@ void RecCPU::recCpuAND()
 				if(Op_X == Op_Y) 
 				{
 					//If we reached here Op_X isnt const
-					//FPS_LOG("AND2 X=Y is 0 %x\n", recOpCode);
 					CheckLiveRegister(Op_X, (Op_X == Op_Z) ? false : true);
-					//RefChip16Emitter->MOV16MtoR(EAX, (unsigned int)&REG_X);
 				}
 				else
 				{
@@ -1243,7 +1208,6 @@ void RecCPU::recCpuAND()
 		break;
 		//X & imm discard flags only [z,n]
 		case 0x3:
-			//ClearLiveRegister(0xffff, true);
 			if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
 			{
 				tempreg = GPRStatus.GPRConstVal[Op_X] & IMMEDIATE;
@@ -1259,9 +1223,8 @@ void RecCPU::recCpuAND()
 				}
 				else
 				{
-					//CPU_LOG("REGCACHE checkpoint 1\n");
 					CheckLiveRegister(Op_X, true); //The live instruction is different so copy it in, then we can ignore it.
-					//RefChip16Emitter->MOV16MtoR(EAX, (unsigned int)&REG_X);
+
 					RefChip16Emitter->AND16ItoR(EAX, IMMEDIATE);
 					ClearLiveRegister(0xffff, false);
 					recTestLogic();
@@ -1270,7 +1233,6 @@ void RecCPU::recCpuAND()
 		break;
 		//X & Y discard flags only [z,n]
 		case 0x4:
-			//ClearLiveRegister(0xffff);
 			if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true && GPRStatus.GPRIsConst[Op_Y] == true)
 			{
 				tempreg = GPRStatus.GPRConstVal[Op_X] & GPRStatus.GPRConstVal[Op_Y];
@@ -1283,7 +1245,6 @@ void RecCPU::recCpuAND()
 				if(Op_X == Op_Y) 
 				{ 
 					//If we reached here Op_X isnt const
-					//FPS_LOG("AND3 X=Y is 0 %x\n", recOpCode);
 					CheckLiveRegister(Op_X, false);
 				}
 				else

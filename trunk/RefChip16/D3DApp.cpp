@@ -125,21 +125,14 @@ void D3DReset()
 
 void ClearRenderTarget()
 {
-	//if(drawing == true) d3ddev->EndScene(); //Dont do a present, it hates vsync ;p
-		//EndDrawing()
-	//drawing = false;
 	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET,pixelcolours[SpriteSet.BackgroundColour] , 1.0f, 0);
 	d3ddev->Clear(0, NULL, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
 
-	//StartDrawing();
 }
 
 void StartDrawing()
 {
 	//CPU_LOG("Start Scene");
-	//if(drawing == true) return;
-	
-	//drawing = true;
 	d3ddev->BeginScene();
 
 	d3ddev->SetVertexDeclaration(vertexDecl);
@@ -204,8 +197,6 @@ void InitDisplay(int width, int height, HWND hWnd)
 	d3dpp.BackBufferFormat = D3DFMT_A8R8G8B8;
     d3dpp.BackBufferWidth = 320;
     d3dpp.BackBufferHeight = 240;
-   // d3dpp.EnableAutoDepthStencil = TRUE;
-   // d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
 
 	if(!MenuVSync) d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 	else d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
@@ -217,11 +208,11 @@ void InitDisplay(int width, int height, HWND hWnd)
                       &d3dpp,
                       &d3ddev);
 
-//
+
 	GenerateVertexList();
         
-	result = D3DXCompileShader(vertexshade,    //filepath
-                                   (UINT)strlen(vertexshade),            //macro's
+	result = D3DXCompileShader(vertexshade,  
+                                   (UINT)strlen(vertexshade),            
                                    NULL,
 								NULL,
 								"vs_main",
@@ -237,8 +228,8 @@ void InitDisplay(int width, int height, HWND hWnd)
 										&vertexShader);
 	code->Release();
 
-	result = D3DXCompileShader(pixelshade,    //filepath
-                                   (UINT)strlen(pixelshade),            //macro's
+	result = D3DXCompileShader(pixelshade,    
+                                   (UINT)strlen(pixelshade),            
                                    NULL,
 								NULL,
 								"ps_main",
@@ -299,39 +290,31 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 
 		if(xstart >= 320)
 		{
-			//CPU_LOG("X start out of bounds start X=%d xinc=%d\n", xstart, xinc);
 			StartMemSkip = (xstart - 319);
 			xstart -= StartMemSkip & ~0x1;
-			//CPU_LOG("X start skipping %d memory before each line adding %d to j xend = %d\n", StartMemSkip / 2, StartMemSkip & 0x1, xend);
 		}
 		if(xend < 0)
 		{
 			//Untested! probably wrong.
-			//CPU_LOG("X end out of bounds end x=%d\n", xend);
 			EndMemSkip = ((0 - xend) - 1) / 2;
 			xend = 0;
-			//CPU_LOG("xend now x=%d\n", xend);
 		}
 	}
 	else
 	{		
 		xstart = X;
 		xend = X+SpriteSet.Width;
-		if(xend <= xstart || xstart >= 320)return;
+		if(xend <= xstart || xstart >= 320) return;
 
 		if(xend > 320)
 		{
-			//CPU_LOG("X end out of bounds end x=%d\n", xend);
 			EndMemSkip = (xend - 319) / 2 ; //Mem inc is done just before the end skip so we do 320 - 1
 			xend = 320;
-			//CPU_LOG("xend now x=%d\n", xend);
 		}
 		else if(xstart < 0)
 		{
-			//CPU_LOG("X start out of bounds start X=%d xinc=%d\n", xstart, xinc);
 			StartMemSkip = (0 - xstart);
 			xstart += StartMemSkip & ~0x1;
-			//CPU_LOG("X start skipping %d memory before each line adding %d to j xend = %d\n", StartMemSkip / 2, StartMemSkip & 0x1, xend);
 		} 
 	}
 
@@ -354,16 +337,12 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 
 		if(yend > 240)
 		{
-			//CPU_LOG("Y end out of bounds end y=%d\n", yend);
 			yend = 240;
-			//CPU_LOG("yend now y=%d\n", yend);
 		}
 		else if(ystart < 0)
 		{
-			//CPU_LOG("Y low start out of bounds start y=%d\n", ystart);
 			MemAddr += ((xend - xstart) / 2) * abs(ystart);
 			ystart = 0;
-			//CPU_LOG("y low start now y=%d\n", ystart);
 		}
 	}	
 
@@ -412,17 +391,12 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 		i += yinc;
 	}
 	//QueryPerformanceCounter((LARGE_INTEGER *)&count2);
-
-//	FPS_LOG("Cycles to render %d x %d Sprite %d\n", SpriteSet.Height, SpriteSet.Width, count2 - count1);
-	//FPS_LOG("End Sprite draw\n");
+	//FPS_LOG("Cycles to render %d x %d Sprite %d\n", SpriteSet.Height, SpriteSet.Width, count2 - count1);
 }
 
 
 void RedrawLastScreen()
 {
-	
-	
-	//if(drawing == false) return;
 	D3DXMATRIX matTranslate;
 	D3DXMATRIX matProjView = Identity * Ortho2D;
 	//FPS_LOG("Starting redraw");
@@ -435,11 +409,11 @@ void RedrawLastScreen()
 			if(ScreenBuffer[j][i] != 0)
 			{
 				D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
-				//d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
 				D3DXMATRIXA16 matWorldViewProj = matTranslate * matProjView;
 				constantTable->SetMatrix(d3ddev,
                                  "WorldViewProj",
                                  &matWorldViewProj);
+
 				d3ddev->DrawPrimitive(D3DPT_TRIANGLELIST, ScreenBuffer[j][i]*4, 2);
 			}
 		}				
@@ -449,8 +423,6 @@ void RedrawLastScreen()
 
 void EndDrawing()
 {
-	//if(drawing == false) return;
-	//RedrawLastScreen();
     d3ddev->EndScene(); 
 
 	// Flip!
@@ -461,8 +433,6 @@ void EndDrawing()
 
 void ResetDevice(HWND hWnd)
 {
-	if(drawing == true) EndDrawing();
-
 	if (onDeviceLost) onDeviceLost();
 	
 	HRESULT result = d3ddev->Reset(&d3dpp);
@@ -497,7 +467,7 @@ void ResetDevice(HWND hWnd)
 
 
 		InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);
-	//d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);	
+
 	}
 	else MessageBox(hWnd, "VSync change Failed", "Vsync Error", 0);
 
