@@ -80,12 +80,10 @@ unsigned short ReadMemReverse(unsigned long location){
 }
 
 unsigned char ReadMem8(unsigned long location){
-	//CPU_LOG("8bit read rom %x with %x\n", location, Memory[location & 0xffff]);
 	return Memory[location & 0xffff];
 }
 
 void WriteMem(unsigned short location, unsigned short value){
-	//CPU_LOG("16bit write to %x with %x", location, value);
 	Memory[location & 0xffff] = value & 0xff;
 	Memory[(location+1) & 0xffff] = value>>8;
 }
@@ -178,48 +176,34 @@ void CpuCore()
 	case 0x1: //CLS
 		CPU_LOG("Clear Screen\n");
 		
-	 // Clear back buffer and depth buffer
-		
+	 // Clear back buffer	
 		memset(ScreenBuffer, 0, sizeof(ScreenBuffer));
 
 		SpriteSet.BackgroundColour = 0;
 		ClearRenderTarget();
-		//RedrawLastScreen();
 		nextvsync = cycles + (1000000 / 60);
 		break;
 	case 0x2: //Wait for VBLANK
-		//CPU_LOG("Waiting for VBlank\n");
-		if(!VBlank) //PC -= 4;
+		if(!VBlank) //Skip until need vblank.
 		{
 			cycles = nextvsync;
 		}
 		break;
 	case 0x3: //Background Colour
 		CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
-		if(SpriteSet.BackgroundColour == (OpCode & 0xf)) 
-		{
-			//Redraw is really slow and inefficient (fixed pipe crap :P) so we 
-			//need to avoid it whenever possible. (Pacman for checking)
-			//FPS_LOG("Skipping Background Colour Change");
-			return;
-		}
-		SpriteSet.BackgroundColour = OpCode & 0xf;
-
-		ClearRenderTarget();
-		//StartDrawing();
-		//RedrawLastScreen();
 		
+		SpriteSet.BackgroundColour = OpCode & 0xf;
+		ClearRenderTarget();		
 		break;
 	case 0x4: // Set Sprite H/W
 		SpriteSet.Height = (OpCode >> 8) & 0xFF;
 		SpriteSet.Width =  (OpCode & 0xFF) * 2;
-		//CPU_LOG("Set Sprite H = %x W = %x\n", SpriteSet.Height, SpriteSet.Width);
 		break;
 	case 0x5: //Draw Sprite from Mem addr
 		X = REG_X;
 		Y = REG_Y;
 		MemAddr = IMMEDIATE;
-		//StartDrawing();
+
 		//CPU_LOG("Draw Sprite at Cords X = %d Y = %d, Mem = %x\n", X, Y, MemAddr);
 		DrawSprite(MemAddr, X, Y);
 		break;
@@ -227,7 +211,7 @@ void CpuCore()
 		X = REG_X;
 		Y = REG_Y;
 		MemAddr = REG_Z;
-		//StartDrawing();
+
 		//CPU_LOG("Draw Sprite at Cords from reg %x X = %d Y = %d, Mem = %x\n", (OpCode >> 8) & 0xf, X, Y, MemAddr);
 		DrawSprite(MemAddr, X, Y);
 		break;
@@ -239,41 +223,30 @@ void CpuCore()
 		//CPU_LOG("Random  number generated %x max %x\n", REG_X, IMMEDIATE);
 		break;
 	case 0x8: //FLIP Sprite Orientation
-		//Do Nothing for the minute!
 		//CPU_LOG("Flip V = %s H = %s totalcode %x\n", (OpCode >> 8) & 0x1 ? "true" : "false", (OpCode >> 8) & 0x2 ? "true" : "false", (OpCode >> 8) & 0xf );
 		SpriteSet.VerticalFlip = ((OpCode >> 8) & 0x1) ? true : false;
 		SpriteSet.HorizontalFlip = ((OpCode >> 8) & 0x2) ? true : false;
 		break;
 	case 0x9: //Stop playing any sounds
-		//Do Nothing :D
 		RefChip16Sound->StopVoice();
-		//CPU_LOG("Not implemented %x\n", PC);
 		break;
 	case 0xA: //Generate 500hz sound
 		//Do Nothing :D
 		RefChip16Sound->GenerateHz(500, IMMEDIATE);
-		//RefChip16Sound->StopVoice();
-		//CPU_LOG("500hz sound for %d milliseconds PC %x\n", IMMEDIATE, PC);
 		break;
 	case 0xB:  //Generate 1000hz sound
 		//Do Nothing :D
 		RefChip16Sound->GenerateHz(1000, IMMEDIATE);
-		//RefChip16Sound->StopVoice();
-		//CPU_LOG("1000hz sound for %d milliseconds PC %x\n", IMMEDIATE, PC);
 		break;
 	case 0xC: //Generate 1500hz sound
 		RefChip16Sound->GenerateHz(1500, IMMEDIATE);
-		//RefChip16Sound->StopVoice();
-		//CPU_LOG("1500hz sound for %d milliseconds PC %x\n", IMMEDIATE, PC);
 		break;
 	case 0xD: //Play tone specified in X for IMMEDIATE ms
-		CPU_LOG("%dhz sound for %d milliseconds PC %x\n", ReadMem(REG_X), IMMEDIATE, PC);
+		//CPU_LOG("%dhz sound for %d milliseconds PC %x\n", ReadMem(REG_X), IMMEDIATE, PC);
 		RefChip16Sound->GenerateHz(ReadMem(REG_X), IMMEDIATE);
 		break;
 	case 0xE: //Set ADSR
 		RefChip16Sound->SetADSR(Op_Y, Op_X, ((OpCode >> 4) & 0xf), Op_Z, ((OpCode >> 12) & 0xf), ((OpCode >> 8) & 0xf));
-		//RefChip16Sound->StopVoice();
-		//CPU_LOG("1500hz sound for %d milliseconds PC %x\n", IMMEDIATE, PC);
 		break;
 	default:
 		//CPU_LOG("Bad Core Op %x\n", PC);
@@ -875,7 +848,6 @@ void CpuPallate()
 				
 			}
 			GenerateVertexList();
-			//RedrawLastScreen();
 			
 		break;
 		//PAL Rx - Load the palette starting at the address pointed to by Register X, 16*3 bytes, RGB format; used for all drawing since last vblank.
@@ -892,8 +864,7 @@ void CpuPallate()
 				else pixels[i+3] = 0x0;
 				
 			}
-			GenerateVertexList();
-			//RedrawLastScreen();					
+			GenerateVertexList();			
 		break;
 	}
 }
@@ -907,31 +878,26 @@ void OpenLog()
 
 void Reset()
 {
-	//OpenLog();
 	Flag._u16 = 0;
 	PC = 0;
 	StackPTR = 0xFDF0;
 	cycles = 0;
 	nextvsync = (1000000 / 60);
-	//Running = false;
 	for(int i = 0; i < 16; i++) 
 		GPR[i] = 0;
 	memset(Memory, 0, sizeof(Memory));
 
 	D3DReset();
 	ClearRenderTarget();
-	//StartDrawing();
 	RefChip16Sound->StopVoice();
 	RefChip16Sound->SetADSR(0, 0, 15, 0, 15, TRIANGLE);
 	
 }
 
 void FetchOpCode()
-{
-	
+{	
 	OpCode = ReadMem(PC + 2) | (ReadMem(PC) << 16);
 	PC+=4;
-	////CPU_LOG("Loading PC %x OpCode %x\n", PC, OpCode);
 }
 
 void ExecuteOp()
@@ -958,11 +924,9 @@ void ExecuteOp()
 			//CPU_LOG("Unknown Op\n");
 			break;
 	}
-//	CALL(CpuCore);
 }
 void CPULoop()
 {
-
 		FetchOpCode();
 		ExecuteOp();
 }
@@ -1003,8 +967,6 @@ int LoadRom(const char *Filename){
 			fread (Memory,1,lSize,pFile); //Read in the file
 			fclose (pFile); //Close the file
 			PC = ROMHeader[0xA] + (ROMHeader[0xB] << 8); //Read off start address.
-			//CPU_LOG("PC = %x", PC);
-			//RefChip16D3D->StartDrawing();
 		}
 		return 0;
 	} 
