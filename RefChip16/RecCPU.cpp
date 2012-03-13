@@ -328,7 +328,7 @@ void RecCPU::recCpuCore()
 		ClearLiveRegister(0xffff, true);
 		RefChip16Emitter->CALL(ClearRenderTarget);
 		RefChip16Emitter->CALL(StartDrawing);
-		RefChip16Emitter->CALL(RedrawLastScreen);
+		//RefChip16Emitter->CALL(RedrawLastScreen);
 
 		RefChip16Emitter->x86SetJ32( j32Ptr[0] );
 		break;

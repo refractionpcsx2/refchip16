@@ -43,7 +43,7 @@ using namespace CPU;
 #define IMMEDIATE   ((short)(OpCode & 0xFFFF))
 #define CPU_LOG __Log
 #define FPS_LOG __Log2
-//#define LOGGINGENABLED
+#define LOGGINGENABLED
 
 extern int cpubranch;
 namespace CPU
@@ -176,13 +176,13 @@ void CpuCore()
 		//CPU_LOG("Nop\n");
 		break;
 	case 0x1: //CLS
-		//CPU_LOG("Clear Screen\n");
+		CPU_LOG("Clear Screen\n");
 		
 	 // Clear back buffer and depth buffer
 		
 		memset(ScreenBuffer, 0, sizeof(ScreenBuffer));
 
-		SpriteSet.BackgroundColour = 0;
+		//SpriteSet.BackgroundColour = 0;
 		ClearRenderTarget();
 		//RedrawLastScreen();
 		nextvsync = cycles + (1000000 / 60);
@@ -195,7 +195,7 @@ void CpuCore()
 		}
 		break;
 	case 0x3: //Background Colour
-		//CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
+		CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
 		if(SpriteSet.BackgroundColour == (OpCode & 0xf)) 
 		{
 			//Redraw is really slow and inefficient (fixed pipe crap :P) so we 
@@ -206,8 +206,8 @@ void CpuCore()
 		SpriteSet.BackgroundColour = OpCode & 0xf;
 
 		ClearRenderTarget();
-		StartDrawing();
-		RedrawLastScreen();
+		//StartDrawing();
+		//RedrawLastScreen();
 		
 		break;
 	case 0x4: // Set Sprite H/W
@@ -219,7 +219,7 @@ void CpuCore()
 		X = REG_X;
 		Y = REG_Y;
 		MemAddr = IMMEDIATE;
-		StartDrawing();
+		//StartDrawing();
 		//CPU_LOG("Draw Sprite at Cords X = %d Y = %d, Mem = %x\n", X, Y, MemAddr);
 		DrawSprite(MemAddr, X, Y);
 		break;
@@ -227,7 +227,7 @@ void CpuCore()
 		X = REG_X;
 		Y = REG_Y;
 		MemAddr = REG_Z;
-		StartDrawing();
+		//StartDrawing();
 		//CPU_LOG("Draw Sprite at Cords from reg %x X = %d Y = %d, Mem = %x\n", (OpCode >> 8) & 0xf, X, Y, MemAddr);
 		DrawSprite(MemAddr, X, Y);
 		break;
@@ -875,7 +875,7 @@ void CpuPallate()
 				
 			}
 			GenerateVertexList();
-			RedrawLastScreen();
+			//RedrawLastScreen();
 			
 		break;
 		//PAL Rx - Load the palette starting at the address pointed to by Register X, 16*3 bytes, RGB format; used for all drawing since last vblank.
@@ -893,7 +893,7 @@ void CpuPallate()
 				
 			}
 			GenerateVertexList();
-			RedrawLastScreen();					
+			//RedrawLastScreen();					
 		break;
 	}
 }
