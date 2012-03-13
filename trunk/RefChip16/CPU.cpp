@@ -43,7 +43,7 @@ using namespace CPU;
 #define IMMEDIATE   ((short)(OpCode & 0xFFFF))
 #define CPU_LOG __Log
 #define FPS_LOG __Log2
-#define LOGGINGENABLED
+//#define LOGGINGENABLED
 
 extern int cpubranch;
 namespace CPU
@@ -182,7 +182,7 @@ void CpuCore()
 		
 		memset(ScreenBuffer, 0, sizeof(ScreenBuffer));
 
-		//SpriteSet.BackgroundColour = 0;
+		SpriteSet.BackgroundColour = 0;
 		ClearRenderTarget();
 		//RedrawLastScreen();
 		nextvsync = cycles + (1000000 / 60);

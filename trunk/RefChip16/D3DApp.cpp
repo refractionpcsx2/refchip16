@@ -109,6 +109,16 @@ void D3DReset()
 	SpriteSet.HorizontalFlip = SpriteSet.VerticalFlip = false;
 	memset(ScreenBuffer, 0, sizeof(ScreenBuffer)); 
 	ClearRenderTarget();
+
+	// Need to reset colours in case the palate has been changed.
+	pixelcolours[0] = 0x00000000; 	pixelcolours[1] = 0xFF000000;	pixelcolours[2] = 0xFF888888;	pixelcolours[3] = 0xFFBF3932;	pixelcolours[4] = 0xFFDE7AAE;
+	pixelcolours[5] = 0xFF4C3D21;	pixelcolours[6] = 0xFF905F25;	pixelcolours[7] = 0xFFE49452;	pixelcolours[8] =  0xFFEAD979;	pixelcolours[9] = 0xFF537A3B;
+	pixelcolours[10] = 0xFFABD54A;	pixelcolours[11] = 0xFF252E38;	pixelcolours[12] =  0xFF00467F;	pixelcolours[13] = 0xFF68ABCC;	pixelcolours[14] =  0xFFBCDEE4;
+	pixelcolours[15] =  0xFFFFFFFF;
+
+	//Generate Verticies with new colour
+	GenerateVertexList();
+
 	CPU_LOG("D3D Reset");
 
 }
@@ -372,7 +382,7 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 			curpixel = curpixel >> ((~MemPos & 0X1) << 2) & 0xf;
 
 							
-			
+			//Never do anything with transparent textures! causes oddities in snafu
 			if(curpixel > 0)
 			{
 				if(ScreenBuffer[j][i] != 0) CPU::Flag.CarryBorrow = 1;	//Check collision
@@ -390,9 +400,10 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 					d3ddev->DrawPrimitive(D3DPT_TRIANGLELIST, curpixel<<2, 1);
 					
 				}*/
+				ScreenBuffer[j][i] = curpixel;	
 			}
-			ScreenBuffer[j][i] = curpixel;	
-
+			
+			//CPU_LOG("%x", curpixel);
 			j+=xinc;
 			MemAddr += MemPos;
 		}
@@ -421,7 +432,7 @@ void RedrawLastScreen()
 		
 		for(int j = 319; j != 0; --j){	
 		
-			if(ScreenBuffer[j][i] != 0 && ScreenBuffer[j][i] != SpriteSet.BackgroundColour)
+			if(ScreenBuffer[j][i] != 0)
 			{
 				D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
 				//d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
@@ -491,9 +502,4 @@ void ResetDevice(HWND hWnd)
 	else MessageBox(hWnd, "VSync change Failed", "Vsync Error", 0);
 
 	ActualVSync = MenuVSync;
-	if(Running == true)
-	{
-		//StartDrawing();
-		//RedrawLastScreen();
-	}
 }
