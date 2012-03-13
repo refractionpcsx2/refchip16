@@ -34,9 +34,9 @@ ON_DEVICE_RESET onDeviceReset;
 LPDIRECT3D9 d3d;
 LPDIRECT3DDEVICE9 d3ddev;
 LPDIRECT3DVERTEXBUFFER9 v_buffer;
-LPDIRECT3DINDEXBUFFER9 i_buffer;
 LPDIRECT3DVERTEXDECLARATION9 vertexDecl = NULL;
 LPDIRECT3DVERTEXSHADER9      vertexShader = NULL;
+LPDIRECT3DPIXELSHADER9      pixelShader = NULL;
 LPD3DXCONSTANTTABLE          constantTable = NULL;
 D3DXMATRIX Ortho2D;	
 D3DXMATRIX Identity;
@@ -115,9 +115,9 @@ void D3DReset()
 
 void ClearRenderTarget()
 {
-	if(drawing == true) d3ddev->EndScene(); //Dont do a present, it hates vsync ;p
+	//if(drawing == true) d3ddev->EndScene(); //Dont do a present, it hates vsync ;p
 		//EndDrawing()
-	drawing = false;
+	//drawing = false;
 	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET,pixelcolours[SpriteSet.BackgroundColour] , 1.0f, 0);
 	d3ddev->Clear(0, NULL, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
 
@@ -127,14 +127,14 @@ void ClearRenderTarget()
 void StartDrawing()
 {
 	//CPU_LOG("Start Scene");
-	if(drawing == true) return;
+	//if(drawing == true) return;
 	
-	drawing = true;
+	//drawing = true;
 	d3ddev->BeginScene();
 
 	d3ddev->SetVertexDeclaration(vertexDecl);
     d3ddev->SetVertexShader(vertexShader);
-
+	d3ddev->SetPixelShader(pixelShader);
 	// select the vertex buffer to display
     d3ddev->SetStreamSource(0, v_buffer, 0, sizeof(CHIP16VERTEX));
 
@@ -158,8 +158,8 @@ void GenerateVertexList()
 	// create a vertex buffer interface called v_buffer
     d3ddev->CreateVertexBuffer(sizeof(pixel),
                                D3DUSAGE_WRITEONLY,
-                               CUSTOMFVF,
-                               D3DPOOL_DEFAULT,
+                               0,
+                               D3DPOOL_MANAGED,
                                &v_buffer,
                                NULL);
 
@@ -215,8 +215,8 @@ void InitDisplay(int width, int height, HWND hWnd)
                                    NULL,
 								NULL,
 								"vs_main",
-								"vs_1_1",  
-								D3DXSHADER_DEBUG, 
+								"vs_2_0",  
+								D3DXSHADER_OPTIMIZATION_LEVEL3, 
 								&code, 
 								NULL, // error messages 
 								&constantTable );
@@ -227,6 +227,23 @@ void InitDisplay(int width, int height, HWND hWnd)
 										&vertexShader);
 	code->Release();
 
+	result = D3DXCompileShader(pixelshade,    //filepath
+                                   (UINT)strlen(pixelshade),            //macro's
+                                   NULL,
+								NULL,
+								"ps_main",
+								"ps_2_0",  
+								D3DXSHADER_OPTIMIZATION_LEVEL3, 
+								&code, 
+								NULL, // error messages 
+								NULL );
+	if(FAILED(result))
+		MessageBox(hWnd, "Invalid ps code", "Error", MB_OK);
+
+	d3ddev->CreatePixelShader((DWORD*)code->GetBufferPointer(),
+										&pixelShader);
+	code->Release();
+
 	d3ddev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE); // for some reason this culls by default?! wtf
     d3ddev->SetRenderState(D3DRS_LIGHTING, FALSE);    // turn off the 3D lighting
     d3ddev->SetRenderState(D3DRS_ZENABLE, FALSE);    // turn on the z-buffer
@@ -235,10 +252,6 @@ void InitDisplay(int width, int height, HWND hWnd)
     
     D3DXMatrixOrthoLH(&Ortho2D, 320.0f, -240.0f, 1.0f, 100.0f);
     D3DXMatrixIdentity(&Identity);
-
-    d3ddev->SetTransform(D3DTS_PROJECTION, &Ortho2D);
-    d3ddev->SetTransform(D3DTS_WORLD, &Identity);
-    d3ddev->SetTransform(D3DTS_VIEW, &Identity);
 
 	D3DXMATRIXA16 matWorldViewProj = Identity * Identity * Ortho2D;
         constantTable->SetMatrix(d3ddev,
@@ -259,7 +272,6 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 	int EndMemSkip = 0;
 	int j;
 	//__int64 count1, count2;
-	D3DXMATRIX matProjView = Identity * Ortho2D;
 	unsigned char curpixel;
 
 	//QueryPerformanceCounter((LARGE_INTEGER *)&count1);
@@ -345,11 +357,6 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 		}
 	}	
 
-	D3DXMATRIX matTranslate;
-
-	//FPS_LOG("Starting Sprite draw\n");
-	//CPU_LOG("\nAt X=%x X+S=%x Y=%x to Y+S=%x\n", X, X+SpriteSet.Width, Y, Y + SpriteSet.Height);
-
 	CPU::Flag.CarryBorrow = 0;
 
 	for(int i = ystart; i != yend;){
@@ -369,18 +376,20 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 			if(curpixel > 0)
 			{
 				if(ScreenBuffer[j][i] != 0) CPU::Flag.CarryBorrow = 1;	//Check collision
+
+				//This is apparently really slow now and doing it all at once is quick O_o
+
 				//CPU_LOG("cur %x scrbf %x", curpixel, ScreenBuffer[j][i]);
-				if(ScreenBuffer[j][i] != curpixel)
+				/*if((ScreenBuffer[j][i] != curpixel) && (curpixel != SpriteSet.BackgroundColour))
 				{					
 					D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
-					d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
-					D3DXMATRIXA16 matWorldViewProj = matTranslate * matProjView;
+					matWorldViewProj = matTranslate * matProjView;
 					constantTable->SetMatrix(d3ddev,
                                  "WorldViewProj",
                                  &matWorldViewProj);
-					d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, curpixel*4, 2);
+					d3ddev->DrawPrimitive(D3DPT_TRIANGLELIST, curpixel<<2, 1);
 					
-				}
+				}*/
 			}
 			ScreenBuffer[j][i] = curpixel;	
 
@@ -401,22 +410,26 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 void RedrawLastScreen()
 {
 	
+	
+	//if(drawing == false) return;
 	D3DXMATRIX matTranslate;
 	D3DXMATRIX matProjView = Identity * Ortho2D;
-	if(drawing == false) return;
 	//FPS_LOG("Starting redraw");
 	
+	//This used to be slow, but since changing to shaders, it seems quicker again, guess ive just gotta make sure i dont thrash it.
 	for(int i = 239; i != 0; --i){
+		
 		for(int j = 319; j != 0; --j){	
-			if(ScreenBuffer[j][i] != 0)
+		
+			if(ScreenBuffer[j][i] != 0 && ScreenBuffer[j][i] != SpriteSet.BackgroundColour)
 			{
 				D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
-				d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
+				//d3ddev->SetTransform(D3DTS_WORLD, &matTranslate);
 				D3DXMATRIXA16 matWorldViewProj = matTranslate * matProjView;
 				constantTable->SetMatrix(d3ddev,
                                  "WorldViewProj",
                                  &matWorldViewProj);
-				d3ddev->DrawPrimitive(D3DPT_TRIANGLESTRIP, ScreenBuffer[j][i]*4, 2);
+				d3ddev->DrawPrimitive(D3DPT_TRIANGLELIST, ScreenBuffer[j][i]*4, 2);
 			}
 		}				
 	}
@@ -425,8 +438,8 @@ void RedrawLastScreen()
 
 void EndDrawing()
 {
-	if(drawing == false) return;
-
+	//if(drawing == false) return;
+	//RedrawLastScreen();
     d3ddev->EndScene(); 
 
 	// Flip!
@@ -447,30 +460,24 @@ void ResetDevice(HWND hWnd)
 	{
 		if (onDeviceReset) onDeviceReset();
 	
-		//clean up shaders (NEW)
 		if(constantTable)
-		{
 			constantTable->Release();
-			constantTable = NULL;
-		}
+
 
 		if(vertexShader)
-		{
 			vertexShader->Release();
-			vertexShader = NULL;
-		}
+
+
+		if(pixelShader)
+			pixelShader->Release();
+
 
 		if(vertexDecl)
-		{
 			vertexDecl->Release();
-			vertexDecl = NULL;
-		}
+
 		if(v_buffer)
 			v_buffer->Release();    // close and release the vertex buffer
-
-		if(i_buffer)
-			i_buffer->Release();    // close and release the index buffer
-
+		
 		if(d3ddev)
 			d3ddev->Release();      // close and release the device
 	
@@ -484,6 +491,9 @@ void ResetDevice(HWND hWnd)
 	else MessageBox(hWnd, "VSync change Failed", "Vsync Error", 0);
 
 	ActualVSync = MenuVSync;
-	StartDrawing();
-	RedrawLastScreen();
+	if(Running == true)
+	{
+		//StartDrawing();
+		//RedrawLastScreen();
+	}
 }

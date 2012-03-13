@@ -141,8 +141,15 @@
     <ClInclude Include="InputDevice.h" />
     <ClInclude Include="D3DApp.h" />
     <ClInclude Include="RecCPU.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Shaders.h" />
     <ClInclude Include="Sound.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="RefChip16.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="logo.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

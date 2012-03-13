@@ -26,6 +26,7 @@
 #include <time.h>
 #include <tchar.h>
 #include <windows.h>
+#include "resource.h"
 /*#define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>*/
@@ -39,11 +40,15 @@ extern LPDIRECT3D9 d3d;
 extern LPDIRECT3DDEVICE9 d3ddev;
 extern LPDIRECT3DVERTEXBUFFER9 v_buffer;
 extern LPDIRECT3DINDEXBUFFER9 i_buffer;
-
+extern LPDIRECT3DVERTEXDECLARATION9 vertexDecl;
+extern LPDIRECT3DVERTEXSHADER9      vertexShader;
+extern LPDIRECT3DPIXELSHADER9      pixelShader;
+extern LPD3DXCONSTANTTABLE          constantTable;
 // The WindowProc function prototype
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 HMENU                   hMenu, hSubMenu, hSubMenu2;
 OPENFILENAME ofn;
+HBITMAP LogoJPG = NULL;
 
 char szFileName[MAX_PATH] = "";
 int LoadSuccess = 0;
@@ -70,13 +75,23 @@ void CleanupRoutine()
 	delete RefChip16Input;	
 	delete RefChip16Emitter;
 
+	if(constantTable)
+			constantTable->Release();
+	
+	if(vertexShader)
+		vertexShader->Release();
+
+
+	if(pixelShader)
+		pixelShader->Release();
+
+
+	if(vertexDecl)
+		vertexDecl->Release();
 	//Clean up DirectX and COM
 	if(v_buffer)
 		v_buffer->Release();    // close and release the vertex buffer
-
-	if(i_buffer)
-		i_buffer->Release();    // close and release the index buffer
-
+	
 	if(d3ddev)
 		d3ddev->Release();      // close and release the device
 	
@@ -190,6 +205,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.lpfnWndProc = WindowProc;
 	wc.hInstance = hInstance;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
 	wc.lpszClassName = "WindowClass";
 
 	RegisterClassEx(&wc);
@@ -204,9 +220,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	UpdateTitleBar(hWnd); //Set the title stuffs
 	ShowWindow(hWnd, nCmdShow);
 
-
-	SCREEN_HEIGHT = wr.bottom - wr.top;
-	SCREEN_WIDTH = wr.right - wr.left;
 	RefChip16Input = new InputDevice(hInstance, hWnd);
 	RefChip16Sound = new SoundDevice();
 	RefChip16Emitter = new Emitter();
@@ -252,8 +265,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				//framenumber++;
 				//CPU_LOG("Time for frame %d to render %d cycles\n", framenumber, vsyncend - vsyncstart);
 				VBlank = 1;
-				//RedrawLastScreen();
-				EndDrawing();
+				
 				nextvsync += (1000000 / 60);
 
 				//Ignore controls if the user isnt pointing at this window
@@ -269,6 +281,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					counter = time(NULL);		
 				}	
 				StartDrawing();
+					RedrawLastScreen();
+					EndDrawing();
 				//QueryPerformanceCounter((LARGE_INTEGER *)&vsyncstart);
 				
 			}
@@ -388,7 +402,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case WM_CREATE:
 		  hMenu = CreateMenu();
 		  SetMenu(hWnd, hMenu);
-
+		  LogoJPG = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_LOGO));
+		  
 		  hSubMenu = CreatePopupMenu();
 		  hSubMenu2 = CreatePopupMenu();
 		  AppendMenu(hSubMenu, MF_STRING, ID_OPEN, "&Open");
@@ -405,6 +420,25 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		  InsertMenu(hMenu, 2, MF_STRING, ID_ABOUT, "&About");
 		  DrawMenuBar(hWnd);
 		  break;
+		break;
+		case WM_PAINT:
+			{
+			BITMAP bm;
+			PAINTSTRUCT ps;
+
+			HDC hdc = BeginPaint(hWnd, &ps);
+
+			HDC hdcMem = CreateCompatibleDC(hdc);
+			HGDIOBJ hbmOld = SelectObject(hdcMem, LogoJPG);
+
+			GetObject(LogoJPG, sizeof(bm), &bm);
+			StretchBlt(hdc, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+			
+			SelectObject(hdcMem, hbmOld);
+			DeleteDC(hdcMem);
+
+			EndPaint(hWnd, &ps);
+			}
 		break;
 		case WM_COMMAND :
 			
