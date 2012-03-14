@@ -180,7 +180,6 @@ void CpuCore()
 		memset(ScreenBuffer, 0, sizeof(ScreenBuffer));
 
 		SpriteSet.BackgroundColour = 0;
-		ClearRenderTarget();
 		nextvsync = cycles + (1000000 / 60);
 		break;
 	case 0x2: //Wait for VBLANK
@@ -193,7 +192,6 @@ void CpuCore()
 		CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
 		
 		SpriteSet.BackgroundColour = OpCode & 0xf;
-		ClearRenderTarget();		
 		break;
 	case 0x4: // Set Sprite H/W
 		SpriteSet.Height = (OpCode >> 8) & 0xFF;
@@ -847,7 +845,6 @@ void CpuPallate()
 				else pixels[i+3] = 0x0;
 				
 			}
-			GenerateVertexList();
 			
 		break;
 		//PAL Rx - Load the palette starting at the address pointed to by Register X, 16*3 bytes, RGB format; used for all drawing since last vblank.
@@ -863,8 +860,7 @@ void CpuPallate()
 				if(i > 0) pixels[i+3] = 0xFF;
 				else pixels[i+3] = 0x0;
 				
-			}
-			GenerateVertexList();			
+			}		
 		break;
 	}
 }
@@ -888,7 +884,6 @@ void Reset()
 	memset(Memory, 0, sizeof(Memory));
 
 	D3DReset();
-	ClearRenderTarget();
 	RefChip16Sound->StopVoice();
 	RefChip16Sound->SetADSR(0, 0, 15, 0, 15, TRIANGLE);
 	

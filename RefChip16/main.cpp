@@ -36,19 +36,12 @@ InputDevice *RefChip16Input;
 SoundDevice *RefChip16Sound;
 RecCPU *RefChip16RecCPU;
 Emitter *RefChip16Emitter;
-extern LPDIRECT3D9 d3d;
-extern LPDIRECT3DDEVICE9 d3ddev;
-extern LPDIRECT3DVERTEXBUFFER9 v_buffer;
-extern LPDIRECT3DINDEXBUFFER9 i_buffer;
-extern LPDIRECT3DVERTEXDECLARATION9 vertexDecl;
-extern LPDIRECT3DVERTEXSHADER9      vertexShader;
-extern LPDIRECT3DPIXELSHADER9      pixelShader;
-extern LPD3DXCONSTANTTABLE          constantTable;
 // The WindowProc function prototype
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 HMENU                   hMenu, hSubMenu, hSubMenu2;
 OPENFILENAME ofn;
 HBITMAP LogoJPG = NULL;
+HWND hwndSDL;
 
 char szFileName[MAX_PATH] = "";
 int LoadSuccess = 0;
@@ -58,6 +51,8 @@ int fps = 0;
 char headingstr [128];
 char inisettings[4];
 char MenuScale = 1;
+int prev_v_cycle = 0;
+int v_cycle = prev_v_cycle;
 
 int SCREEN_WIDTH = 320;
 int SCREEN_HEIGHT = 240;
@@ -74,29 +69,6 @@ void CleanupRoutine()
 	delete RefChip16Sound;	
 	delete RefChip16Input;	
 	delete RefChip16Emitter;
-
-	if(constantTable)
-			constantTable->Release();
-	
-	if(vertexShader)
-		vertexShader->Release();
-
-
-	if(pixelShader)
-		pixelShader->Release();
-
-
-	if(vertexDecl)
-		vertexDecl->Release();
-	//Clean up DirectX and COM
-	if(v_buffer)
-		v_buffer->Release();    // close and release the vertex buffer
-	
-	if(d3ddev)
-		d3ddev->Release();      // close and release the device
-	
-	if(d3d)
-		d3d->Release();			//close and release directx
 }
 
 int SaveIni(){
@@ -184,7 +156,7 @@ int LoadIni(){
 
 void UpdateTitleBar(HWND hWnd)
 {
-	sprintf_s(headingstr, "RefChip16 V1.31 FPS: %d Recompiler %s", fps, Recompiler ? "Enabled" : "Disabled");
+	sprintf_s(headingstr, "RefChip16 V1.4 FPS: %d Recompiler %s", fps, Recompiler ? "Enabled" : "Disabled");
 	SetWindowText(hWnd, headingstr);
 }
 // The entry point for any Windows program
@@ -225,8 +197,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	RefChip16Emitter = new Emitter();
 	RefChip16RecCPU = new RecCPU();
 		
-	InitDisplay(320, 240, hWnd);
+	
 	RefChip16RecCPU->InitRecMem();
+	
 	
 	if(strstr(lpCmdLine, "-r"))
 	{
@@ -239,6 +212,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		{
 			RefChip16RecCPU->ResetRecMem();
 			Running = true;
+			InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);
 		}		
 	}
 
@@ -249,59 +223,85 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	
 	while(msg.message != WM_QUIT)
 	{
-		while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-
-		if(Running == true)
-		{
-		
-			if(cycles >= nextvsync) //We have a VBlank!
-			{
-				//QueryPerformanceCounter((LARGE_INTEGER *)&vsyncend);
-				//CPU_LOG("VBlank");
-				//framenumber++;
-				//CPU_LOG("Time for frame %d to render %d cycles\n", framenumber, vsyncend - vsyncstart);
-				VBlank = 1;
-				
-				nextvsync += (1000000 / 60);
-
-				//Ignore controls if the user isnt pointing at this window
-				if(GetActiveWindow() == hWnd) 
-					RefChip16Input->UpdateControls();
-
-				fps+=1;
-				if(counter < time(NULL))
+			
+ 
+			
+				while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 				{
-					UpdateTitleBar(hWnd);
-					UpdateWindow(hWnd);
-					fps = 0;
-					counter = time(NULL);		
-				}	
-				StartDrawing();
-					RedrawLastScreen();
-					EndDrawing();
-				//QueryPerformanceCounter((LARGE_INTEGER *)&vsyncstart);
-				
-			}
-			else
-			{
-				VBlank = 0;
-			}
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
+				}
 
-			if(Recompiler == 1)
-			{
-				RefChip16RecCPU->EnterRecompiledCode();
-			}
-			else
-			{
-				CPULoop();
-				cycles += 1;
-			}
-		}	
-		else Sleep(100);
+				if(Running == true)
+				{
+			
+					if(cycles >= nextvsync) //We have a VBlank!
+					{
+						//QueryPerformanceCounter((LARGE_INTEGER *)&vsyncend);
+						//CPU_LOG("VBlank");
+						//framenumber++;
+						//CPU_LOG("Time for frame %d to render %d cycles\n", framenumber, vsyncend - vsyncstart);
+				
+						VBlank = 1;
+				
+						nextvsync += (1000000 / 60);
+
+						//Ignore controls if the user isnt pointing at this window
+						if(GetActiveWindow() == hWnd || GetActiveWindow() == hwndSDL) 
+							RefChip16Input->UpdateControls();
+
+						fps+=1;
+						
+						if(MenuVSync == 1)
+						{
+							if((fps & 0x7) <= 4)
+								while ((v_cycle - prev_v_cycle) < 1000/60) v_cycle = SDL_GetTicks();
+							else
+								while ((v_cycle - prev_v_cycle) < 1000/54) v_cycle = SDL_GetTicks();
+						}
+
+						StartDrawing();
+							RedrawLastScreen();
+							EndDrawing();
+							prev_v_cycle = v_cycle;
+
+						if(counter < time(NULL))
+						{
+							UpdateTitleBar(hWnd);
+							UpdateWindow(hWnd);
+							fps = 0;
+							counter = time(NULL);	
+	
+						}	
+						//
+						 /* Ticks are in milliseconds so 1000 is used instead of 1 */
+						//{
+							
+						//}
+						
+						
+						//SetFocus(hWnd);
+						///QueryPerformanceCounter((LARGE_INTEGER *)&vsyncstart);
+				
+					}
+					else
+					{
+						VBlank = 0;
+					}
+
+					if(Recompiler == 1)
+					{
+						RefChip16RecCPU->EnterRecompiledCode();
+					}
+					else
+					{
+						CPULoop();
+						cycles += 1;
+					}
+				}	
+				else Sleep(100);
+		
+	
 	}
 	CleanupRoutine();
 	return (int)msg.wParam;
@@ -374,6 +374,9 @@ void ChangeScale(HWND hWnd, int ID)
    AdjustWindowRect(&wr, WS_CAPTION|WS_MINIMIZE|WS_SYSMENU, TRUE);    // adjust the size
 
 	SetWindowPos(hWnd,0,100,100,wr.right - wr.left,wr.bottom - wr.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+	
+	if(Running == true) 
+		InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);
 }
 
 void ToggleVSync(HWND hWnd)
@@ -391,6 +394,7 @@ void ToggleVSync(HWND hWnd)
 	mii.fState ^= MFS_CHECKED; 
 	// Write the new state to the VSync flag.
 	SetMenuItemInfo(hSubMenu2, ID_VSYNC, FALSE, &mii); 
+	prev_v_cycle = SDL_GetTicks();
 }
 
 // this is the main message handler for the program
@@ -467,6 +471,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				{
 					RefChip16RecCPU->ResetRecMem();
 					Running = true;
+					InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);			
 				}
 			}			
 			break;
@@ -489,7 +494,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			 break;
 		  case ID_VSYNC :
 			  ToggleVSync(hWnd);
-			  ResetDevice(hWnd);
 			 break;
 		  case ID_WINDOWX1:
 			  ChangeScale(hWnd, ID_WINDOWX1);
@@ -501,7 +505,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			  ChangeScale(hWnd, ID_WINDOWX3);
 			  break;
 		  case ID_ABOUT :
-				 MessageBox(hWnd, "RefChip16 V1.31 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
+				 MessageBox(hWnd, "RefChip16 V1.4 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
 		  case ID_EXIT :
 			 DestroyWindow(hWnd);

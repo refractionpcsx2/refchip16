@@ -22,11 +22,12 @@
 
 #include <d3d9.h>
 #include <d3dx9.h>
+#include <SDL.h>
+#include <SDL_syswm.h>
 
 extern int SCREEN_WIDTH;
 extern int SCREEN_HEIGHT;
 
-extern D3DPRESENT_PARAMETERS d3dpp;
 extern char MenuVSync;
 
 struct Sprite
@@ -42,11 +43,8 @@ struct Sprite
 void InitDisplay(int width, int height, HWND hWnd);
 void DrawSprite(unsigned short MemAddr, int X, int Y);
 void EndDrawing();
-void ResetDevice(HWND hWnd);
-void GenerateVertexList();
 void StartDrawing();
 void D3DReset();
-void ClearRenderTarget();
 void RedrawLastScreen();
 		
 
