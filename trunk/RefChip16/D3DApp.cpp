@@ -19,59 +19,21 @@
 
 #include "CPU.h"
 #include "D3DApp.h"
-#include "Shaders.h"
 using namespace CPU;
-// include the Direct3D Library files
-#pragma comment (lib, "d3d9.lib")
-#pragma comment (lib, "d3dx9.lib")
 //extern InputDevice *RefChip16Input;
 //extern CPU *RefChip16CPU;
-typedef void (*ON_DEVICE_LOST)();
-typedef void (*ON_DEVICE_RESET)();
-ON_DEVICE_LOST onDeviceLost;
-ON_DEVICE_RESET onDeviceReset;
 
-LPDIRECT3D9 d3d;
-LPDIRECT3DDEVICE9 d3ddev;
-LPDIRECT3DVERTEXBUFFER9 v_buffer;
-LPDIRECT3DVERTEXDECLARATION9 vertexDecl = NULL;
-LPDIRECT3DVERTEXSHADER9      vertexShader = NULL;
-LPDIRECT3DPIXELSHADER9      pixelShader = NULL;
-LPD3DXCONSTANTTABLE          constantTable = NULL;
-D3DXMATRIX Ortho2D;	
-D3DXMATRIX Identity;
+SDL_Surface*    SDL_Display;
 
-
-LPD3DXBUFFER                 code = NULL; 
-
-D3DVERTEXELEMENT9 decl[] = 
-	{
-		{0,  0,  D3DDECLTYPE_FLOAT3,   D3DDECLMETHOD_DEFAULT, 
-										  D3DDECLUSAGE_POSITION, 0},
-		{0, 12,  D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, 
-											D3DDECLUSAGE_COLOR, 0} ,
-		{0, 16,  D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, 
-										  D3DDECLUSAGE_COLOR, 1},
-		D3DDECL_END()
-	};
-extern const char* vertexshade;
-
-LPD3DXFONT m_font;
-D3DCOLOR StatusFontColor;
-D3DPRESENT_PARAMETERS d3dpp;
-RECT m_statusbox;
-
-int width;
-int height;
 char MenuVSync = 1;
-char ActualVSync = 1;
 
-
+extern HWND hwndSDL;
 unsigned char ScreenBuffer[320][240];
 Sprite SpriteSet;
-
 struct CHIP16VERTEX {FLOAT X, Y, Z; DWORD COLOR;};
 #define CUSTOMFVF (D3DFVF_XYZ | D3DFVF_DIFFUSE)
+CHIP16VERTEX pixel[4*16]; //Buffer to store all the pixel verticles
+
 #define CPU_LOG __Log
 #define FPS_LOG __Log2
 
@@ -98,9 +60,6 @@ unsigned long pixelcolours[16] = { 0x00000000, 0xFF000000, 0xFF888888, 0xFFBF393
 								    //  8			9			A			B			C			D			E			F
 								   0xFFEAD979, 0xFF537A3B, 0xFFABD54A, 0xFF252E38, 0xFF00467F, 0xFF68ABCC, 0xFFBCDEE4, 0xFFFFFFFF };
 
-CHIP16VERTEX pixel[4*16]; //Buffer to store all the pixel verticles
-short indices[6*16]; // create the indices 6 indices per square
-
 void D3DReset()
 {
 	SpriteSet.Height = 0;
@@ -108,7 +67,6 @@ void D3DReset()
 	SpriteSet.BackgroundColour = 0;
 	SpriteSet.HorizontalFlip = SpriteSet.VerticalFlip = false;
 	memset(ScreenBuffer, 0, sizeof(ScreenBuffer)); 
-	ClearRenderTarget();
 
 	// Need to reset colours in case the palate has been changed.
 	pixelcolours[0] = 0x00000000; 	pixelcolours[1] = 0xFF000000;	pixelcolours[2] = 0xFF888888;	pixelcolours[3] = 0xFFBF3932;	pixelcolours[4] = 0xFFDE7AAE;
@@ -116,148 +74,32 @@ void D3DReset()
 	pixelcolours[10] = 0xFFABD54A;	pixelcolours[11] = 0xFF252E38;	pixelcolours[12] =  0xFF00467F;	pixelcolours[13] = 0xFF68ABCC;	pixelcolours[14] =  0xFFBCDEE4;
 	pixelcolours[15] =  0xFFFFFFFF;
 
-	//Generate Verticies with new colour
-	GenerateVertexList();
-
-	CPU_LOG("D3D Reset");
+	CPU_LOG("Video Reset");
 
 }
-
-void ClearRenderTarget()
-{
-	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET,pixelcolours[SpriteSet.BackgroundColour] , 1.0f, 0);
-	d3ddev->Clear(0, NULL, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
-
-}
-
-void StartDrawing()
-{
-	//CPU_LOG("Start Scene");
-	d3ddev->BeginScene();
-
-	d3ddev->SetVertexDeclaration(vertexDecl);
-    d3ddev->SetVertexShader(vertexShader);
-	d3ddev->SetPixelShader(pixelShader);
-	// select the vertex buffer to display
-    d3ddev->SetStreamSource(0, v_buffer, 0, sizeof(CHIP16VERTEX));
-
-}
-void GenerateVertexList()
-{	
-	int i;
-	int j = 0;
-
-		
-	//Generate the verticies for each of the colours
-	for(i = 0; i < 16; i++)
-	{
-		pixel[i*4].X       = 0.0f;	pixel[i*4].Y	   = 0.0f;  pixel[i*4].Z       = 10.0f;  pixel[i*4].COLOR  	 = pixelcolours[i];
-		pixel[1 + (i*4)].X = 0.0f;  pixel[1 + (i*4)].Y = 1.0f;  pixel[1 + (i*4)].Z = 10.0f;  pixel[1 + (i*4)].COLOR = pixelcolours[i];
-		pixel[2 + (i*4)].X = 1.0f;  pixel[2 + (i*4)].Y = 0.0f;  pixel[2 + (i*4)].Z = 10.0f;  pixel[2 + (i*4)].COLOR = pixelcolours[i];
-		pixel[3 + (i*4)].X = 1.0f;  pixel[3 + (i*4)].Y = 1.0f;  pixel[3 + (i*4)].Z = 10.0f; pixel[3 + (i*4)].COLOR = pixelcolours[i];
-		
-	}
-
-	// create a vertex buffer interface called v_buffer
-    d3ddev->CreateVertexBuffer(sizeof(pixel),
-                               D3DUSAGE_WRITEONLY,
-                               0,
-                               D3DPOOL_MANAGED,
-                               &v_buffer,
-                               NULL);
-
-	
-
-    VOID* pVoid;    // a void pointer
-	
-    // lock v_buffer and load the vertices into it
-    v_buffer->Lock(0, 0, (void**)&pVoid, 0);
-    memcpy(pVoid, pixel, sizeof(pixel));
-    v_buffer->Unlock();
-
-	d3ddev->CreateVertexDeclaration(decl, &vertexDecl);
-
-
-}
-
-
+extern int prev_v_cycle;
 void InitDisplay(int width, int height, HWND hWnd)
 {
-	d3d = NULL;
-	d3ddev = NULL;
-	v_buffer = NULL;
-	HRESULT result;
+	if(SDL_Init(SDL_INIT_VIDEO) < 0) 
+	{
+       MessageBox(hWnd, "Failed to INIT SDL", "Error", MB_OK);
+	}
 
-	d3d = Direct3DCreate9(D3D_SDK_VERSION);
+	if((SDL_Display = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_NOFRAME)) == NULL) {
+       MessageBox(hWnd, "Failed to Create SDL Surface", "Error", MB_OK);
+    }
 	
-    ZeroMemory(&d3dpp, sizeof(d3dpp));
-    d3dpp.Windowed = TRUE;
-    d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-    d3dpp.hDeviceWindow = hWnd;
-	d3dpp.BackBufferFormat = D3DFMT_A8R8G8B8;
-    d3dpp.BackBufferWidth = 320;
-    d3dpp.BackBufferHeight = 240;
+	struct SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version);
 
-	if(!MenuVSync) d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
-	else d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
+	if(-1 == SDL_GetWMInfo(&wmInfo))
+		 MessageBox(hWnd, "Failed to get WMInfo SDL", "Error", MB_OK);
 
-    d3d->CreateDevice(D3DADAPTER_DEFAULT,
-                      D3DDEVTYPE_HAL,
-                      hWnd,
-                      D3DCREATE_HARDWARE_VERTEXPROCESSING,
-                      &d3dpp,
-                      &d3ddev);
+	hwndSDL = wmInfo.window;
+	SetParent(hwndSDL, hWnd);
+	SetWindowPos(hwndSDL, HWND_TOP , 0, 0, width, height, NULL);
+	prev_v_cycle = SDL_GetTicks();
 
-
-	GenerateVertexList();
-        
-	result = D3DXCompileShader(vertexshade,  
-                                   (UINT)strlen(vertexshade),            
-                                   NULL,
-								NULL,
-								"vs_main",
-								"vs_2_0",  
-								D3DXSHADER_OPTIMIZATION_LEVEL3, 
-								&code, 
-								NULL, // error messages 
-								&constantTable );
-	if(FAILED(result))
-		MessageBox(hWnd, "Invalid vs code", "Error", MB_OK);
-
-	d3ddev->CreateVertexShader((DWORD*)code->GetBufferPointer(),
-										&vertexShader);
-	code->Release();
-
-	result = D3DXCompileShader(pixelshade,    
-                                   (UINT)strlen(pixelshade),            
-                                   NULL,
-								NULL,
-								"ps_main",
-								"ps_2_0",  
-								D3DXSHADER_OPTIMIZATION_LEVEL3, 
-								&code, 
-								NULL, // error messages 
-								NULL );
-	if(FAILED(result))
-		MessageBox(hWnd, "Invalid ps code", "Error", MB_OK);
-
-	d3ddev->CreatePixelShader((DWORD*)code->GetBufferPointer(),
-										&pixelShader);
-	code->Release();
-
-	d3ddev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE); // for some reason this culls by default?! wtf
-    d3ddev->SetRenderState(D3DRS_LIGHTING, FALSE);    // turn off the 3D lighting
-    d3ddev->SetRenderState(D3DRS_ZENABLE, FALSE);    // turn on the z-buffer
-
-	
-    
-    D3DXMatrixOrthoLH(&Ortho2D, 320.0f, -240.0f, 1.0f, 100.0f);
-    D3DXMatrixIdentity(&Identity);
-
-	D3DXMATRIXA16 matWorldViewProj = Identity * Identity * Ortho2D;
-        constantTable->SetMatrix(d3ddev,
-                                 "WorldViewProj",
-                                 &matWorldViewProj);
 
 }
 
@@ -365,20 +207,7 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 			if(curpixel > 0)
 			{
 				if(ScreenBuffer[j][i] != 0) CPU::Flag.CarryBorrow = 1;	//Check collision
-
-				//This is apparently really slow now and doing it all at once is quick O_o
-
-				//CPU_LOG("cur %x scrbf %x", curpixel, ScreenBuffer[j][i]);
-				/*if((ScreenBuffer[j][i] != curpixel) && (curpixel != SpriteSet.BackgroundColour))
-				{					
-					D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
-					matWorldViewProj = matTranslate * matProjView;
-					constantTable->SetMatrix(d3ddev,
-                                 "WorldViewProj",
-                                 &matWorldViewProj);
-					d3ddev->DrawPrimitive(D3DPT_TRIANGLELIST, curpixel<<2, 1);
-					
-				}*/
+							
 				ScreenBuffer[j][i] = curpixel;	
 			}
 			
@@ -397,9 +226,12 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 
 void RedrawLastScreen()
 {
-	D3DXMATRIX matTranslate;
-	D3DXMATRIX matProjView = Identity * Ortho2D;
 	//FPS_LOG("Starting redraw");
+	int scale = 1; //Used for when the screen is bigger :P
+
+	scale = SCREEN_WIDTH / 320;
+	SDL_Rect rect = {0,0,SCREEN_WIDTH,SCREEN_WIDTH};
+	SDL_FillRect(SDL_Display, &rect, pixelcolours[SpriteSet.BackgroundColour]);
 	
 	//This used to be slow, but since changing to shaders, it seems quicker again, guess ive just gotta make sure i dont thrash it.
 	for(int i = 239; i != 0; --i){
@@ -408,13 +240,8 @@ void RedrawLastScreen()
 		
 			if(ScreenBuffer[j][i] != 0)
 			{
-				D3DXMatrixTranslation(&matTranslate, (float)j-160.0f, (float)i-120.0f, 1.0f);
-				D3DXMATRIXA16 matWorldViewProj = matTranslate * matProjView;
-				constantTable->SetMatrix(d3ddev,
-                                 "WorldViewProj",
-                                 &matWorldViewProj);
-
-				d3ddev->DrawPrimitive(D3DPT_TRIANGLELIST, ScreenBuffer[j][i]*4, 2);
+				SDL_Rect rect = {j*scale,i*scale,scale,scale};
+				SDL_FillRect(SDL_Display, &rect, pixelcolours[ScreenBuffer[j][i]]);
 			}
 		}				
 	}
@@ -423,53 +250,16 @@ void RedrawLastScreen()
 
 void EndDrawing()
 {
-    d3ddev->EndScene(); 
-
-	// Flip!
-    d3ddev->Present(NULL, NULL, NULL, NULL);
 	//CPU_LOG("End Scene");
+
 	drawing = false;
+		
+	if( SDL_MUSTLOCK( SDL_Display ) ) { SDL_UnlockSurface( SDL_Display ); }
+	SDL_Flip( SDL_Display );
 }
 
-void ResetDevice(HWND hWnd)
+void StartDrawing()
 {
-	if (onDeviceLost) onDeviceLost();
-	
-	HRESULT result = d3ddev->Reset(&d3dpp);
-
-	if(result == 0)
-	{
-		if (onDeviceReset) onDeviceReset();
-	
-		if(constantTable)
-			constantTable->Release();
-
-
-		if(vertexShader)
-			vertexShader->Release();
-
-
-		if(pixelShader)
-			pixelShader->Release();
-
-
-		if(vertexDecl)
-			vertexDecl->Release();
-
-		if(v_buffer)
-			v_buffer->Release();    // close and release the vertex buffer
-		
-		if(d3ddev)
-			d3ddev->Release();      // close and release the device
-	
-		if(d3d)
-			d3d->Release();			//close and release directx
-
-
-		InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);
-
-	}
-	else MessageBox(hWnd, "VSync change Failed", "Vsync Error", 0);
-
-	ActualVSync = MenuVSync;
+	//CPU_LOG("Start Scene");
+	if( SDL_MUSTLOCK( SDL_Display ) ) { SDL_LockSurface( SDL_Display ); }
 }

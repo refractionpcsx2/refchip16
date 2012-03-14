@@ -323,7 +323,6 @@ void RecCPU::recCpuCore()
 
 		RefChip16Emitter->MOV16ItoM((unsigned int)&SpriteSet.BackgroundColour, recOpCode & 0xf);
 		ClearLiveRegister(0xffff, true);
-		RefChip16Emitter->CALL(ClearRenderTarget);
 
 		break;
 	case 0x4: // Set Sprite H/W

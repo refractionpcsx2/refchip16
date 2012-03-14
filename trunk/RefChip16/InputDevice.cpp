@@ -39,7 +39,7 @@ InputDevice::InputDevice(HINSTANCE hInstance, HWND hWnd)
 	//Set data format to Keyboard (O_o)
 	m_directinputKeyboard->SetDataFormat( &c_dfDIKeyboard );
 	//Tell it we want full foreground control
-	m_directinputKeyboard->SetCooperativeLevel(hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE); 
+	m_directinputKeyboard->SetCooperativeLevel(hWnd, DISCL_BACKGROUND | DISCL_EXCLUSIVE); 
 
 }
 
