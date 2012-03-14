@@ -190,7 +190,6 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 	int DecaySamples = (int)(SampleLength * DSPSettings.Decay[DSPSettings.CurDecay]);
 	int ReleaseSamples = (int)(SampleLength * DSPSettings.Release[DSPSettings.CurRelease]);
 	
-	return;
 	DSPSettings.Length = 0;
 
 	pSourceVoice->GetState(&pVoiceState);
