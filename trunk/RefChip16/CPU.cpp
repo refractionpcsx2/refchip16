@@ -55,6 +55,7 @@ unsigned short VBlank;
 FlagRegister Flag;
 unsigned long cycles;
 unsigned long nextvsync;
+unsigned short lastrandom = 0x1234;
 bool Running = false;
 char Recompiler = 1;
 bool drawing = false;
@@ -89,9 +90,14 @@ void WriteMem(unsigned short location, unsigned short value){
 }
 
 
-unsigned short __fastcall GenerateRandom()
+unsigned short __fastcall GenerateRandom(unsigned long immediate)
 {
-	return rand();
+	unsigned short randval;
+
+	randval = rand(); //Apparently if IMMEDIATE is 1, it always generates 0 O_o
+	lastrandom ^= randval;
+	randval = lastrandom % immediate;
+	return randval;
 }
 //This function handles the Conditions for the CPU, it is represented by a number, so this is the best way we're gonna do it!
 
@@ -214,10 +220,12 @@ void CpuCore()
 		DrawSprite(MemAddr, X, Y);
 		break;
 	case 0x7: //Random Number
-		randval = rand() % ((unsigned short)IMMEDIATE+1); //Apparently if IMMEDIATE is 1, it always generates 0 O_o
+		randval = rand(); //Apparently if IMMEDIATE is 1, it always generates 0 O_o
+		randval ^= lastrandom;
+		
 		//Need to make sure result isnt 0 and is in range.
-		if(randval > IMMEDIATE) randval -= 1;
-		REG_X = randval;
+		REG_X = randval % ((unsigned short)IMMEDIATE+1);
+		lastrandom = REG_X;
 		//CPU_LOG("Random  number generated %x max %x\n", REG_X, IMMEDIATE);
 		break;
 	case 0x8: //FLIP Sprite Orientation

@@ -333,18 +333,10 @@ void RecCPU::recCpuCore()
 	case 0x7: //Random Number
 		//CPU_LOG("Random number generated from %x", IMMEDIATE);
 		ClearLiveRegister(0xffff, true);
+		RefChip16Emitter->MOV32ItoR(ECX, IMMEDIATE+1);
 		RefChip16Emitter->CALL16((int)GenerateRandom);
-		RefChip16Emitter->MOV32ItoR(ECX, IMMEDIATE); //1 to IMMEDIATE + 1
-		RefChip16Emitter->CMP16ItoR(ECX, 0xFFFF);
 
-		j32Ptr[0] = RefChip16Emitter->JE32(0); //Need to add 1 to immediate unless it was 0xffff as itll overflow
-		RefChip16Emitter->ADD16ItoR(ECX, 1);
-		RefChip16Emitter->x86SetJ32( j32Ptr[0] ); 
-
-		RefChip16Emitter->XOR32RtoR(EDX, EDX);
-		RefChip16Emitter->DIV16RtoEAX(ECX);
-		RefChip16Emitter->MOV16RtoM((unsigned int)&REG_X, EDX);
-
+		SetLiveRegister(Op_X);
 		GPRStatus.GPRIsConst[Op_X] = false;
 
 		break;
