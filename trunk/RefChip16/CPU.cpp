@@ -94,7 +94,7 @@ unsigned short __fastcall GenerateRandom(unsigned long immediate)
 {
 	unsigned short randval;
 
-	randval = rand(); //Apparently if IMMEDIATE is 1, it always generates 0 O_o
+	randval = rand(); 
 	lastrandom ^= randval;
 	randval = lastrandom % immediate;
 	return randval;
@@ -172,7 +172,6 @@ void CpuCore()
 {
 	int MemAddr;
 	int X, Y;	
-	unsigned short randval;
 	//CPU_LOG("Core OP %x\n", (OpCode >> 16 & 0xf));
 	switch((OpCode >> 16 & 0xf))
 	{
@@ -220,12 +219,7 @@ void CpuCore()
 		DrawSprite(MemAddr, X, Y);
 		break;
 	case 0x7: //Random Number
-		randval = rand(); //Apparently if IMMEDIATE is 1, it always generates 0 O_o
-		randval ^= lastrandom;
-		
-		//Need to make sure result isnt 0 and is in range.
-		REG_X = randval % ((unsigned short)IMMEDIATE+1);
-		lastrandom = REG_X;
+		REG_X = GenerateRandom((unsigned short)IMMEDIATE+1);
 		//CPU_LOG("Random  number generated %x max %x\n", REG_X, IMMEDIATE);
 		break;
 	case 0x8: //FLIP Sprite Orientation
