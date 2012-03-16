@@ -86,7 +86,7 @@ class CPU
 		extern char Recompiler;
 		extern bool drawing;
 
-		unsigned short __fastcall GenerateRandom();
+		unsigned short __fastcall GenerateRandom(unsigned long immediate);
 		void FetchOpCode();
 		void ExecuteOp();
 		void CpuCore(); 
