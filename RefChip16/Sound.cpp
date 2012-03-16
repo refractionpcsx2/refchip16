@@ -107,11 +107,14 @@ int SoundDevice::InitXAudio()
 
 void SoundDevice::StopVoice()
 {
+	
+	pSourceVoice->GetState(&pVoiceState);
 	if(pVoiceState.BuffersQueued > 0) 
 	{
-		pSourceVoice->Stop( 0 );//CPU_LOG("Still playing last sound, returning!");
-			//return;
-	}
+		CPU_LOG("Stopping %d voice(s)!\n", pVoiceState.BuffersQueued);
+		pSourceVoice->Stop( 0 );//
+		pSourceVoice->FlushSourceBuffers();		
+	} else CPU_LOG("Stop voice called, nothing playing though\n");
 }
 
 void SoundDevice::SetADSR(int Attack, int Decay, int Sustain, int Release, int Volume, int Type)
@@ -192,12 +195,8 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 	
 	DSPSettings.Length = 0;
 
-	pSourceVoice->GetState(&pVoiceState);
-	if(pVoiceState.BuffersQueued > 0) 
-	{
-		pSourceVoice->Stop( 0 );//CPU_LOG("Still playing last sound, returning!");
-	}
-
+	StopVoice();
+	
 	
 	//Setup! - We need to set some of the DSP options before we can process the sound
 

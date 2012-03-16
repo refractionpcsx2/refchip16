@@ -146,7 +146,7 @@ unsigned char* __fastcall RecCPU::ExecuteBlock()
 void __fastcall recWriteMem(unsigned short location, unsigned short value)
 {
 	
-	CPU_LOG("rec Writing to %x with value %x startpc %x recmem %x\n", location, value, PCIndex[RecMemory[location]].StartPC, RecMemory[location]);
+	//CPU_LOG("rec Writing to %x with value %x startpc %x recmem %x\n", location, value, PCIndex[RecMemory[location]].StartPC, RecMemory[location]);
 	PCIndex[RecMemory[location]].StartPC = NULL;
 	Memory[location & 0xffff] = value & 0xff;
 	Memory[(location+1) & 0xffff] = value>>8;
