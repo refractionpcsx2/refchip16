@@ -174,7 +174,7 @@ void CpuCore()
 		//CPU_LOG("Nop\n");
 		break;
 	case 0x1: //CLS
-		CPU_LOG("Clear Screen\n");
+		//CPU_LOG("Clear Screen\n");
 		
 	 // Clear back buffer	
 		memset(ScreenBuffer, 0, sizeof(ScreenBuffer));
@@ -189,7 +189,7 @@ void CpuCore()
 		}
 		break;
 	case 0x3: //Background Colour
-		CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
+		//CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
 		
 		SpriteSet.BackgroundColour = OpCode & 0xf;
 		break;
