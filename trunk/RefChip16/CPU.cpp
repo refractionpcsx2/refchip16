@@ -97,6 +97,7 @@ unsigned short __fastcall GenerateRandom(unsigned long immediate)
 	randval = rand(); 
 	lastrandom ^= randval;
 	randval = lastrandom % immediate;
+	CPU_LOG("Random  number generated %x max %x\n", randval, immediate-1);
 	return randval;
 }
 //This function handles the Conditions for the CPU, it is represented by a number, so this is the best way we're gonna do it!
@@ -220,7 +221,7 @@ void CpuCore()
 		break;
 	case 0x7: //Random Number
 		REG_X = GenerateRandom((unsigned short)IMMEDIATE+1);
-		//CPU_LOG("Random  number generated %x max %x\n", REG_X, IMMEDIATE);
+		
 		break;
 	case 0x8: //FLIP Sprite Orientation
 		//CPU_LOG("Flip V = %s H = %s totalcode %x\n", (OpCode >> 8) & 0x1 ? "true" : "false", (OpCode >> 8) & 0x2 ? "true" : "false", (OpCode >> 8) & 0xf );

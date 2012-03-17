@@ -49,7 +49,7 @@ struct DSP DSPSettings = {
 
 SoundDevice::SoundDevice()
 {
-	pbWaveData = new BYTE[ 3500000 ]; // room for 24 second release and 9 seconds tone time, plus a bit extra :)
+	pbWaveData = new BYTE[ 9600000 ]; // room for at least a couple of minutes:)
 	//pbWaveData = (unsigned char*)wavedata;
 	InitXAudio();
 }
@@ -366,9 +366,8 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 	XAUDIO2_BUFFER buffer={0};
 	buffer.Flags = XAUDIO2_END_OF_STREAM;
 	buffer.pAudioData = pbWaveData;
-	buffer.AudioBytes = 2 * 44100; // 16bit Blocksize (2) * Samplerate (44100hz)
+	buffer.AudioBytes = DSPSettings.Length*2;
 	buffer.PlayBegin = 0;	
-	buffer.PlayLength = DSPSettings.Length;
 	//We dont want to loop so lets set our buffer to no loop
 	buffer.LoopBegin = 0;
 	buffer.LoopLength = 0;
