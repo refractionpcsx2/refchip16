@@ -869,9 +869,10 @@ void CpuPallate()
 }
 void OpenLog()
 {
-	
+#ifdef LOGGINGENABLED
 	fopen_s(&LogFile, ".\\c16Log.txt","w"); 
 //	setbuf( LogFile, NULL );
+#endif
 
 }
 
@@ -989,7 +990,7 @@ void __Log(char *fmt, ...) {
 }
 
 void __Log2(char *fmt, ...) {
-
+#ifdef LOGGINGENABLED
 	va_list list;
 
 
@@ -998,5 +999,7 @@ void __Log2(char *fmt, ...) {
 	va_start(list, fmt);
 	vfprintf_s(LogFile, fmt, list);
 	va_end(list);
+#endif
 }
+
 }

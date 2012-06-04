@@ -87,14 +87,18 @@ int SaveIni(){
 		fwrite(&inisettings,1,4,iniFile); //Read in the file
 		CPU_LOG("pos %d\n", Recompiler, MenuVSync, MenuScale, ftell(iniFile));
 		fclose(iniFile); //Close the file
+#ifdef LOGGINGENABLED
 		fclose(LogFile); 
+#endif
 		return 0;
 	} 
 	else
 	{
 		CPU_LOG("Error Saving Ini\n");
 		//User cancelled, either way, do nothing.
+#ifdef LOGGINGENABLED
 		fclose(LogFile); 
+#endif
 		return 1;
 	}	
 }
@@ -156,7 +160,7 @@ int LoadIni(){
 
 void UpdateTitleBar(HWND hWnd)
 {
-	sprintf_s(headingstr, "RefChip16 V1.42 FPS: %d Recompiler %s", fps, Recompiler ? "Enabled" : "Disabled");
+	sprintf_s(headingstr, "RefChip16 V1.43 FPS: %d Recompiler %s", fps, Recompiler ? "Enabled" : "Disabled");
 	SetWindowText(hWnd, headingstr);
 }
 // The entry point for any Windows program
@@ -505,7 +509,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			  ChangeScale(hWnd, ID_WINDOWX3);
 			  break;
 		  case ID_ABOUT :
-				 MessageBox(hWnd, "RefChip16 V1.42 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
+				 MessageBox(hWnd, "RefChip16 V1.43 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
 		  case ID_EXIT :
 			 DestroyWindow(hWnd);

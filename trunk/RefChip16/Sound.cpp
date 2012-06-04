@@ -196,7 +196,10 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 	DSPSettings.Length = 0;
 
 	StopVoice();
-	
+
+
+	//Make sure we have a rate
+	if(Rate == 0) return;
 	
 	//Setup! - We need to set some of the DSP options before we can process the sound
 
