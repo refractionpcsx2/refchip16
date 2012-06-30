@@ -136,7 +136,8 @@ original_palette:
 	db 41 ;p
 	db 26 ;a
 	db 37 ;l
-	db 26 ;a
+	db 30 ;e
+	db 45 ;t
 	db 45 ;t
 	db 30 ;e
 	db 255		;/0
