@@ -320,10 +320,18 @@ clear_aliens:
 	drw ra, rb, r8 ; ra=x, rb=y, r8=sprite memory location
 	;bullet collision handled on alien
 	cmpi rb, 10 ;check if bullet went off the top of the screen
-	ja returnsub
+	ja bullet_sound
 	ldi r0, 0
 	stm r0, bulletfired ;it did so clear it and store status
-	
+:bullet_sound
+	ldm r0, bullet_fire_snd ;Load in the ship death frequency
+	cmpi r0, #100
+	jbe returnsub
+	sng #00, #61F0  ;set up the noise sound
+	ldi r1, bullet_fire_snd ; Point to the sound for playback
+	snp r1, 30				;Play it for 20ms	
+	subi r0, 200 ;reduce frequency.
+	stm r0, bullet_fire_snd ;save the new frequency
 	ret
 
 :fire_bullet
@@ -332,12 +340,19 @@ clear_aliens:
 	jz returnsub
 	ldi r0, 1   ;it hasnt so lets set it as fired
 	stm r0, bulletfired
-	ldi r0, 216  ;set bullet to go from current ship height + 8px
+	ldi r0, 224  ;set bullet to go from current ship height + 8px
 	stm r0, bulletposy
 	mov r0, rc  ;get current ship pos
 	andi r0, #fff ;filter out the "crashed" part :P tho this shouldnt happen anyway
-	addi r0, 7 ;make it look like its coming from the middle of the ship
+	addi r0, 4 ;make it look like its coming from the middle of the ship
 	stm r0, bulletposx
+	
+	sng #00, #61F0  ;set up the noise sound
+	ldi r0, #05DC ;Load in the ship death frequency
+	ldi r1, bullet_fire_snd ; Point to the sound for playback
+	snp r1, 20				;Play it for 20ms	
+	subi r0, 100 ;reduce frequency.
+	stm r0, bullet_fire_snd ;save the new frequency
 	ret
 		
 :move_left	
@@ -431,7 +446,10 @@ clear_aliens:
 	jae drawaliennext
 	cmpi rb, 208
 	jbe alien_killed
-	ori rc, #1000
+	ori rc, #1000		;else its our poor ship :(
+	sng #00, #F3F8  ;set up the noise sound
+	ldi r0, ship_death_snd ;Load in the ship death frequency
+	snp r0, 100				;Play it for 1000ms
   
 :drawaliennext
 	addi r9, 1				 ;Increment which alien we're dealing with
@@ -446,6 +464,11 @@ clear_aliens:
   add r8, r4			;add the offset to alien address
   ldi r0, 3       ;alien is killed
   stm r0, r8			;save new status
+  
+  sng #00, #F3F8  ;set up the noise sound
+	ldi r0, alien_death_snd ;Load in the ship death frequency
+	snp r0, 100				;Play it for 100ms
+	
   ldm r0 bulletfired
   cmpi r0, 0  ;check if there was actually a bullet
   jz drawaliennext ;there wasnt so dont score the player
@@ -598,7 +621,19 @@ clear_aliens:
 :zero_amount
 	db #00
 	db #00
-	
+
+:ship_death_snd
+	db #DC
+	db #02
+
+:alien_death_snd
+	db #DC
+	db #05
+
+:bullet_fire_snd
+	db #DC
+	db #05
+		
 :alieninfo
   db #00 ;Alien 1
   db #00
