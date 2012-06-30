@@ -841,9 +841,9 @@ void CpuPallate()
 			
 			for(int i = 0; j < 48; i+=4)
 			{
-				pixels[i] = ReadMem8(IMMEDIATE + j++);	
-				pixels[i+1] = ReadMem8(IMMEDIATE + j++);	
-				pixels[i+2] = ReadMem8(IMMEDIATE + j++);
+				pixels[i+2] = ReadMem8(IMMEDIATE + j++); //RR
+				pixels[i+1] = ReadMem8(IMMEDIATE + j++); //GG
+				pixels[i+0] = ReadMem8(IMMEDIATE + j++); //BB
 				if(i > 0) pixels[i+3] = 0xFF;
 				else pixels[i+3] = 0x0;
 				
@@ -857,9 +857,9 @@ void CpuPallate()
 
 			for(int i = 0; j < 48; i+=4)
 			{
-				pixels[i] = ReadMem8(REG_X + j++);	
-				pixels[i+1] = ReadMem8(REG_X + j++);	
-				pixels[i+2] = ReadMem8(REG_X + j++);
+				pixels[i+2] = ReadMem8(REG_X + j++); //RR
+				pixels[i+1] = ReadMem8(REG_X + j++); //GG
+				pixels[i+0] = ReadMem8(REG_X + j++); //BB
 				if(i > 0) pixels[i+3] = 0xFF;
 				else pixels[i+3] = 0x0;
 				
