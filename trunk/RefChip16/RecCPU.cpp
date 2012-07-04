@@ -990,17 +990,6 @@ void RecCPU::recCpuSub()
 			}
 			else
 			{
-				if(CONST_PROP && GPRStatus.GPRIsConst[Op_Y] == true)
-				{
-					if(GPRStatus.GPRConstVal[Op_Y] == 0) 
-					{
-						CPU_LOG("SUB flags Y == 0\n"); //Only works when Y is 0 :(
-						RefChip16Emitter->CMP16ItoR(EAX, GPRStatus.GPRConstVal[Op_Y]);
-					}
-					else RefChip16Emitter->MOV16ItoR(ECX, GPRStatus.GPRConstVal[Op_Y]);
-				}
-				else MoveLiveRegister(Op_Y, ECX);
-
 				if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
 				{
 					ClearLiveRegister(0xffff, true);
@@ -1008,6 +997,21 @@ void RecCPU::recCpuSub()
 				}
 				else CheckLiveRegister(Op_X, true);
 				
+				if(CONST_PROP && GPRStatus.GPRIsConst[Op_Y] == true)
+				{
+					if(GPRStatus.GPRConstVal[Op_Y] == 0) 
+					{
+						CPU_LOG("SUB flags Y == 0\n"); //Only works when Y is 0 :(
+						RefChip16Emitter->CMP16ItoR(EAX, GPRStatus.GPRConstVal[Op_Y]);
+						recSUBCheckCarry();
+						recSUBCheckOVF();
+						recTestLogic();
+						return;
+					}
+					else RefChip16Emitter->MOV16ItoR(ECX, GPRStatus.GPRConstVal[Op_Y]);
+				}
+				else MoveLiveRegister(Op_Y, ECX);
+
 				ClearLiveRegister(Op_X, false);
 
 				RefChip16Emitter->CMP16RtoR(EAX, ECX);
