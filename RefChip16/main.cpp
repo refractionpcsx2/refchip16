@@ -47,12 +47,13 @@ char szFileName[MAX_PATH] = "";
 int LoadSuccess = 0;
 __int64 vsyncstart, vsyncend;
 unsigned char framenumber;
-int fps = 0;	
+int fps2 = 0;
 char headingstr [128];
 char inisettings[4];
 char MenuScale = 1;
 int prev_v_cycle = 0;
-int v_cycle = prev_v_cycle;
+unsigned int v_cycle = prev_v_cycle;
+time_t counter;
 
 int SCREEN_WIDTH = 320;
 int SCREEN_HEIGHT = 240;
@@ -160,7 +161,7 @@ int LoadIni(){
 
 void UpdateTitleBar(HWND hWnd)
 {
-	sprintf_s(headingstr, "RefChip16 V1.44 FPS: %d Recompiler %s", fps, Recompiler ? "Enabled" : "Disabled");
+	sprintf_s(headingstr, "RefChip16 V1.45 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
 	SetWindowText(hWnd, headingstr);
 }
 // The entry point for any Windows program
@@ -168,7 +169,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	HWND hWnd;
 	WNDCLASSEX wc;
-	time_t counter;
+	
 	LPSTR RomName;
 	
 
@@ -183,7 +184,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
 	wc.lpszClassName = "WindowClass";
-
+	srand ( (int)time(NULL) );
 	RegisterClassEx(&wc);
 	OpenLog();
 	LoadIni();
@@ -197,7 +198,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ShowWindow(hWnd, nCmdShow);
 
 	RefChip16Input = new InputDevice(hInstance, hWnd);
-	RefChip16Sound = new SoundDevice();
+	RefChip16Sound = new SoundDevice(hWnd);
 	RefChip16Emitter = new Emitter();
 	RefChip16RecCPU = new RecCPU();
 		
@@ -223,13 +224,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// enter the main loop:
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));
-	counter = time(NULL);
+	
 	
 	while(msg.message != WM_QUIT)
-	{
-			
- 
-			
+	{		
 				while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 				{
 					TranslateMessage(&msg);
@@ -238,60 +236,58 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 				if(Running == true)
 				{
-			
-					if(cycles >= nextvsync) //We have a VBlank!
-					{
-						//QueryPerformanceCounter((LARGE_INTEGER *)&vsyncend);
-						//CPU_LOG("VBlank");
-						//framenumber++;
-						//CPU_LOG("Time for frame %d to render %d cycles\n", framenumber, vsyncend - vsyncstart);
-				
-						VBlank = 1;
-				
-						nextvsync += (1000000 / 60);
 
+					if(cycles >= (nextvsync + ((1000000/60) * fps))) //We have a VBlank!
+					{
+						
+						VBlank = 1;
+						
 						//Ignore controls if the user isnt pointing at this window
 						if(GetActiveWindow() == hWnd || GetActiveWindow() == hwndSDL) 
 							RefChip16Input->UpdateControls();
 
-						fps+=1;
+						fps++; 
+						fps2++;
+
+						StartDrawing();
+						RedrawLastScreen();
+
 						
 						if(MenuVSync == 1)
 						{
-							if((fps & 0x7) <= 4)
-								while ((v_cycle - prev_v_cycle) < 1000/60) v_cycle = SDL_GetTicks();
-							else
-								while ((v_cycle - prev_v_cycle) < 1000/54) v_cycle = SDL_GetTicks();
+							unsigned int value = prev_v_cycle+(int)((float)(1000.0f / 60.0f) * fps);
+
+							v_cycle = SDL_GetTicks();
+
+							while (v_cycle < value) { v_cycle = SDL_GetTicks(); }
+
+							if(fps == 60)
+							{						
+								prev_v_cycle += 1000;
+								fps = 0;	
+								nextvsync += 1000000;
+							}	
 						}
-
-						StartDrawing();
-							RedrawLastScreen();
+						
 							EndDrawing();
-							prev_v_cycle = v_cycle;
-
-						if(counter < time(NULL))
-						{
-							UpdateTitleBar(hWnd);
-							UpdateWindow(hWnd);
-							fps = 0;
-							counter = time(NULL);	
-	
-						}	
-						//
-						 /* Ticks are in milliseconds so 1000 is used instead of 1 */
-						//{
-							
-						//}
-						
-						
-						//SetFocus(hWnd);
-						///QueryPerformanceCounter((LARGE_INTEGER *)&vsyncstart);
-				
 					}
 					else
 					{
 						VBlank = 0;
 					}
+
+					if(counter < time(NULL))
+						{
+							UpdateTitleBar(hWnd);
+							UpdateWindow(hWnd);
+							counter = time(NULL);
+							fps2 = 0;
+							if(!MenuVSync)
+							{
+								nextvsync += (int)((float)(1000000.0f / 60.0f) * fps);
+								fps = 0;								
+							}
+						}
 
 					if(Recompiler == 1)
 					{
@@ -299,8 +295,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 					}
 					else
 					{
-						CPULoop();
 						cycles += 1;
+						CPULoop();
+						
 					}
 				}	
 				else Sleep(100);
@@ -398,7 +395,6 @@ void ToggleVSync(HWND hWnd)
 	mii.fState ^= MFS_CHECKED; 
 	// Write the new state to the VSync flag.
 	SetMenuItemInfo(hSubMenu2, ID_VSYNC, FALSE, &mii); 
-	prev_v_cycle = SDL_GetTicks();
 }
 
 // this is the main message handler for the program
@@ -475,7 +471,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				{
 					RefChip16RecCPU->ResetRecMem();
 					Running = true;
-					InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);			
+					InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);	
+					
+					v_cycle = SDL_GetTicks();
+					prev_v_cycle = v_cycle;
+					counter = time(NULL);
 				}
 			}			
 			break;
@@ -509,7 +509,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			  ChangeScale(hWnd, ID_WINDOWX3);
 			  break;
 		  case ID_ABOUT :
-				 MessageBox(hWnd, "RefChip16 V1.44 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
+				 MessageBox(hWnd, "RefChip16 V1.45 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
 		  case ID_EXIT :
 			 DestroyWindow(hWnd);
@@ -539,7 +539,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		} 
 		break;
 	}
-
+	prev_v_cycle = SDL_GetTicks() - (int)((float)(1000.0f / 60.0f) * fps);
 	return DefWindowProc (hWnd, message, wParam, lParam);
 }
 

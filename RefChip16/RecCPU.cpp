@@ -187,7 +187,7 @@ unsigned char* RecCPU::RecompileBlock()
 				CPU_LOG("Unknown Op\n");
 				break;
 		}
-		if(cycles + PCIndex[recPC].BlockCycles > nextvsync) break;
+		if(cycles + PCIndex[recPC].BlockCycles >= nextvsync) break;
 	}
 	ClearLiveRegister(0xffff, true);
 	//FPS_LOG("Block Length %x\n", PCIndex[recPC].BlockCycles);
@@ -309,15 +309,15 @@ void RecCPU::recCpuCore()
 	case 0x0: //NOP
 		//CPU_LOG("Nop\n");
 		break;
-	case 0x2: //Wait for VBLANK
+	//case 0x2: //Wait for VBLANK - may as well do this in interpreter, less buggy and fiddly ;p
 			//CPU_LOG("Waiting for VBlank\n");
 			//The CPU waits for VSync so we fast forward here (Small Optimization)
 			//If we emulate it as a loop properly, this will cause a lot of Rec overhead!
 			//Using ECX so we dont need to clear our live register
-			RefChip16Emitter->MOV32MtoR(ECX, (unsigned int)&nextvsync);
-			RefChip16Emitter->MOV32RtoM((unsigned int)&cycles, ECX);
-			cpubranch = 1;
-		break;
+			//RefChip16Emitter->MOV32MtoR(ECX, (unsigned int)&nextvsync);
+		//	RefChip16Emitter->MOV32RtoM((unsigned int)&cycles, ECX);
+			//cpubranch = 1;
+		//break;
 	case 0x3: //Background Colour
 		//CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
 

@@ -22,6 +22,7 @@
 #include "CPU.h"
 #include "D3DApp.h"
 #include "Sound.h"
+#include <time.h>
 #include "Emitter.h"
 
 extern SoundDevice *RefChip16Sound;
@@ -53,8 +54,9 @@ unsigned short PC;
 unsigned long OpCode;
 unsigned short VBlank;
 FlagRegister Flag;
-unsigned long cycles;
-unsigned long nextvsync;
+unsigned int cycles=0;
+unsigned int nextvsync=0;
+unsigned int fps=0;
 unsigned short lastrandom = 0x1234;
 bool Running = false;
 char Recompiler = 1;
@@ -96,6 +98,7 @@ unsigned short __fastcall GenerateRandom(unsigned long immediate)
 
 	randval = rand(); 
 	lastrandom ^= randval;
+	lastrandom ^= time(NULL);
 	randval = lastrandom % immediate;
 	CPU_LOG("Random  number generated %x max %x\n", randval, immediate-1);
 	return randval;
@@ -186,12 +189,11 @@ void CpuCore()
 		memset(ScreenBuffer, 0, sizeof(ScreenBuffer));
 
 		SpriteSet.BackgroundColour = 0;
-		nextvsync = cycles + (1000000 / 60);
 		break;
 	case 0x2: //Wait for VBLANK
-		if(!VBlank) //Skip until need vblank.
+		if(!VBlank) //Skip until need vblank..
 		{
-			cycles = nextvsync;
+			cycles = nextvsync + ((1000000/60) * fps);
 		}
 		break;
 	case 0x3: //Background Colour
@@ -882,7 +884,8 @@ void Reset()
 	PC = 0;
 	StackPTR = 0xFDF0;
 	cycles = 0;
-	nextvsync = (1000000 / 60);
+	nextvsync = 0;
+	
 	for(int i = 0; i < 16; i++) 
 		GPR[i] = 0;
 	memset(Memory, 0, sizeof(Memory));

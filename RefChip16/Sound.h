@@ -53,9 +53,9 @@ struct DSP
 class SoundDevice
 {
 	public:
-		SoundDevice();
+		SoundDevice(HWND hWnd);
 		~SoundDevice();
-		int InitXAudio();
+		int InitXAudio(HWND hWnd);
 		void GenerateHz(int Rate, int Period);		
 		void StopVoice();		
 		void SetADSR(int Attack, int Decay, int Sustain, int Release, int Volume, int Type);

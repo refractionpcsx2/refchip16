@@ -24,6 +24,7 @@ using namespace CPU;
 //extern CPU *RefChip16CPU;
 const double MAX_VOLUME = 32760;
 float PI = atan(1.0f)*4; //PI yummy
+bool SoundDisabled = false;
 
 struct DSP DSPSettings = { 
 		TRIANGLE, //Waveform
@@ -47,37 +48,39 @@ struct DSP DSPSettings = {
 		{6      , 24    , 48     , 72   , 114    , 168   , 204    , 240  , 300    , 750   , 1500   , 2400 , 3000   , 9000  , 15000  , 24000}  //Release ms
 	};
 
-SoundDevice::SoundDevice()
+SoundDevice::SoundDevice(HWND hWnd)
 {
 	pbWaveData = new BYTE[ 9600000 ]; // room for at least a couple of minutes:)
 	//pbWaveData = (unsigned char*)wavedata;
-	InitXAudio();
+	InitXAudio(hWnd);
 }
 SoundDevice::~SoundDevice()
 {
 //	pSourceVoice->Stop( 0 );
 	delete pbWaveData;
 
-	if(pSourceVoice)
+	if(pSourceVoice && !SoundDisabled)
 		pSourceVoice->DestroyVoice();
-	if(pMasterVoice)
+	if(pMasterVoice && !SoundDisabled)
 		pMasterVoice->DestroyVoice();
 	if(pXAudio2)
 		pXAudio2->Release();
 }
 
-int SoundDevice::InitXAudio()
+int SoundDevice::InitXAudio(HWND hWnd)
 {
 	HRESULT hr;
 
 	if ( FAILED(hr = CoInitializeEx( 0, COINIT_APARTMENTTHREADED )))
 	{
 		CPU_LOG("Coinit Failed");
+		SoundDisabled = true;
 	}
 
 	if ( FAILED(hr = XAudio2Create( &pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR ) ) )
 	{
 		CPU_LOG("Audio Processor Failed");
+		SoundDisabled = true;
 		return hr;
 	}
 
@@ -85,6 +88,7 @@ int SoundDevice::InitXAudio()
 	if ( FAILED(hr = pXAudio2->CreateMasteringVoice( &pMasterVoice ) ) )
 	{
 		CPU_LOG("Master voice Failed");
+		SoundDisabled = true;
 		return hr;
 	}
 	
@@ -99,6 +103,7 @@ int SoundDevice::InitXAudio()
 	if( FAILED(hr = pXAudio2->CreateSourceVoice( &pSourceVoice, (WAVEFORMATEX*)&waveformat ) ) ) 
 	{
 		CPU_LOG("Source voice Failed");
+		SoundDisabled = true;
 			return hr;
 	}	
 	
@@ -107,7 +112,8 @@ int SoundDevice::InitXAudio()
 
 void SoundDevice::StopVoice()
 {
-	
+	if(SoundDisabled) return;
+
 	pSourceVoice->GetState(&pVoiceState);
 	if(pVoiceState.BuffersQueued > 0) 
 	{
@@ -194,6 +200,8 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 	int ReleaseSamples = (int)(SampleLength * DSPSettings.Release[DSPSettings.CurRelease]);
 	
 	DSPSettings.Length = 0;
+
+	if(SoundDisabled) return;
 
 	StopVoice();
 
