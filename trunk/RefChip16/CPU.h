@@ -80,8 +80,9 @@ class CPU
 		extern unsigned long OpCode;
 		extern unsigned short VBlank;
 		extern FlagRegister Flag;
-		extern unsigned long cycles;
-		extern unsigned long nextvsync;
+		extern unsigned int cycles;
+		extern unsigned int nextvsync;
+		extern unsigned int fps;
 		extern bool Running;
 		extern char Recompiler;
 		extern bool drawing;
