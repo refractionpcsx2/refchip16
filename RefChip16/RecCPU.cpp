@@ -187,7 +187,7 @@ unsigned char* RecCPU::RecompileBlock()
 				CPU_LOG("Unknown Op\n");
 				break;
 		}
-		if(cycles + PCIndex[recPC].BlockCycles >= nextvsync) break;
+		if(cycles + PCIndex[recPC].BlockCycles >= (nextvsync + ((1000000/60) * fps))) break;
 	}
 	ClearLiveRegister(0xffff, true);
 	//FPS_LOG("Block Length %x\n", PCIndex[recPC].BlockCycles);
