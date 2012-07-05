@@ -91,7 +91,14 @@ void WriteMem(unsigned short location, unsigned short value){
 	Memory[(location+1) & 0xffff] = value>>8;
 }
 
-
+unsigned short __fastcall SkipToVBlank()
+{
+	if(!VBlank) //Skip until need vblank..
+	{
+		cycles = nextvsync + ((1000000/60) * fps);
+	}
+	return 0;
+}
 unsigned short __fastcall GenerateRandom(unsigned long immediate)
 {
 	unsigned short randval;
