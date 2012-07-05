@@ -88,6 +88,7 @@ class CPU
 		extern bool drawing;
 
 		unsigned short __fastcall GenerateRandom(unsigned long immediate);
+		unsigned short __fastcall SkipToVBlank();
 		void FetchOpCode();
 		void ExecuteOp();
 		void CpuCore(); 
