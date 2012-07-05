@@ -191,7 +191,7 @@ unsigned char* RecCPU::RecompileBlock()
 	}
 	ClearLiveRegister(0xffff, true);
 	//FPS_LOG("Block Length %x\n", PCIndex[recPC].BlockCycles);
-	RefChip16Emitter->ADD32ItoM((unsigned int)&cycles, PCIndex[recPC].BlockCycles);
+	if(cpubranch != 3) RefChip16Emitter->ADD32ItoM((unsigned int)&cycles, PCIndex[recPC].BlockCycles);
 	FlushConstRegisters(true);
 	RefChip16Emitter->RET();
 	
@@ -309,15 +309,15 @@ void RecCPU::recCpuCore()
 	case 0x0: //NOP
 		//CPU_LOG("Nop\n");
 		break;
-	//case 0x2: //Wait for VBLANK - may as well do this in interpreter, less buggy and fiddly ;p
-			//CPU_LOG("Waiting for VBlank\n");
+	case 0x2: //Wait for VBLANK - may as well do this in interpreter, less buggy and fiddly ;p
+		//	CPU_LOG("Waiting for VBlank\n");
 			//The CPU waits for VSync so we fast forward here (Small Optimization)
 			//If we emulate it as a loop properly, this will cause a lot of Rec overhead!
-			//Using ECX so we dont need to clear our live register
-			//RefChip16Emitter->MOV32MtoR(ECX, (unsigned int)&nextvsync);
-		//	RefChip16Emitter->MOV32RtoM((unsigned int)&cycles, ECX);
-			//cpubranch = 1;
-		//break;
+			ClearLiveRegister(0xffff, true);
+			RefChip16Emitter->CALL16((int)SkipToVBlank);
+			RefChip16Emitter->MOV32ItoM((unsigned int)&PC, PC);
+			cpubranch = 3;
+		break;
 	case 0x3: //Background Colour
 		//CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
 
@@ -350,6 +350,7 @@ void RecCPU::recCpuCore()
 		ClearLiveRegister(0xffff, true);
 		FlushConstRegisters(true);		
 		RefChip16Emitter->MOV32ItoM((unsigned int)&OpCode, recOpCode);
+		RefChip16Emitter->MOV32ItoM((unsigned int)&PC, PC);
 		RefChip16Emitter->CALL(CpuCore);
 		break;
 	}
