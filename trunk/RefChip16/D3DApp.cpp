@@ -234,9 +234,9 @@ void RedrawLastScreen()
 	SDL_FillRect(SDL_Display, &rect, pixelcolours[SpriteSet.BackgroundColour]);
 	
 	//This used to be slow, but since changing to shaders, it seems quicker again, guess ive just gotta make sure i dont thrash it.
-	for(int i = 239; i != 0; --i){
+	for(int i = 0; i <= 240; i++){
 		
-		for(int j = 319; j != 0; --j){	
+		for(int j = 0; j <= 320; j++){	
 		
 			if(ScreenBuffer[j][i] != 0)
 			{
