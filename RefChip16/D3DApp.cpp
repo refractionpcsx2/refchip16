@@ -132,7 +132,7 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 
 		if(xstart >= 320)
 		{
-			StartMemSkip = (xstart - 319);
+			StartMemSkip = (xstart - 320);
 			xstart -= StartMemSkip & ~0x1;
 		}
 		if(xend < 0)
