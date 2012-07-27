@@ -63,7 +63,7 @@ char Recompiler = 1;
 bool drawing = false;
 FILE * LogFile; 
 unsigned short StackPTR;
-unsigned short GPR[16];
+short GPR[16];
 unsigned char Memory[64*1024];
 unsigned char ROMHeader[16];
 

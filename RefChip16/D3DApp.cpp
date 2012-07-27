@@ -130,15 +130,14 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 		if(xend >= 320) return;
 		if(xstart < 0) return;
 
-		if(xstart >= 320)
+		if(xstart > 319)
 		{
-			StartMemSkip = (xstart - 320);
-			xstart -= StartMemSkip & ~0x1;
+			StartMemSkip = ((xstart - 319) + 1) & ~0x1;
+			xstart -= StartMemSkip;
 		}
 		if(xend < 0)
 		{
-			//Untested! probably wrong.
-			EndMemSkip = ((0 - xend) - 1) / 2;
+			EndMemSkip = ((1 - xend)) / 2;
 			xend = 0;
 		}
 	}
@@ -146,7 +145,7 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 	{		
 		xstart = X;
 		xend = X+SpriteSet.Width;
-		if(xend <= xstart || xstart >= 320) return;
+		if(xend <= xstart || xstart >= 320 || xend < 0) return;
 
 		if(xend > 320)
 		{
@@ -169,13 +168,21 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 		if(yend >= ystart)return;
 		if(yend >= 240) return;
 		if(ystart < 0)	return;
+
+		if(ystart > 239)
+		{
+			MemAddr += (((X+SpriteSet.Width) - X) / 2) * abs(240 - ystart);
+			ystart = 239;
+		}
+
+		if(yend < 0) yend = 0;
 	}
 	else
 	{
 		ystart = Y;
 		yend = Y+SpriteSet.Height;
 
-		if(yend <= ystart || ystart >= 240)return;
+		if(yend <= ystart || ystart >= 240 || yend < 0)	return;
 
 		if(yend > 240)
 		{
@@ -183,7 +190,7 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 		}
 		else if(ystart < 0)
 		{
-			MemAddr += ((xend - xstart) / 2) * abs(ystart);
+			MemAddr += (((X+SpriteSet.Width) - X) / 2) * abs(ystart);
 			ystart = 0;
 		}
 	}	
@@ -192,8 +199,8 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 
 	for(int i = ystart; i != yend;){
 		MemAddr += StartMemSkip >> 1;
-		//CPU_LOG("\n");
-		j = xstart + (StartMemSkip & 0x1);
+		
+		j = xstart; 
 		for(; j != xend;)
 		{	
 			if(xstart > xend) MemPos = (j - xstart) & 0x1;
@@ -230,13 +237,13 @@ void RedrawLastScreen()
 	int scale = 1; //Used for when the screen is bigger :P
 
 	scale = SCREEN_WIDTH / 320;
-	SDL_Rect rect = {0,0,SCREEN_WIDTH,SCREEN_WIDTH};
+	SDL_Rect rect = {0,0,SCREEN_WIDTH,SCREEN_HEIGHT};
 	SDL_FillRect(SDL_Display, &rect, pixelcolours[SpriteSet.BackgroundColour]);
 	
 	//This used to be slow, but since changing to shaders, it seems quicker again, guess ive just gotta make sure i dont thrash it.
-	for(int i = 0; i <= 240; i++){
+	for(int i = 0; i < 240; i++){
 		
-		for(int j = 0; j <= 320; j++){	
+		for(int j = 0; j < 320; j++){	
 		
 			if(ScreenBuffer[j][i] != 0)
 			{
