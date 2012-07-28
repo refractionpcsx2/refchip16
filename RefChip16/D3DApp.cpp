@@ -132,13 +132,13 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 
 		if(xstart > 319)
 		{
-			StartMemSkip = ((xstart - 319) + 1) & ~0x1;
-			xstart -= StartMemSkip;
+			StartMemSkip = ((xstart - 319));
+			xstart -= ((xstart - 319)) - (StartMemSkip & 0x1);
 		}
 		if(xend < 0)
 		{
-			EndMemSkip = ((1 - xend)) / 2;
-			xend = 0;
+			EndMemSkip = ((0 - xend)) / 2;
+			xend = -1;
 		}
 	}
 	else
@@ -155,7 +155,7 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 		else if(xstart < 0)
 		{
 			StartMemSkip = (0 - xstart);
-			xstart += StartMemSkip & ~0x1;
+			xstart = 0 - (StartMemSkip & 0x1);
 		} 
 	}
 
@@ -175,7 +175,7 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 			ystart = 239;
 		}
 
-		if(yend < 0) yend = 0;
+		if(yend < 0) yend = -1;
 	}
 	else
 	{
@@ -196,15 +196,16 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 	}	
 
 	CPU::Flag.CarryBorrow = 0;
-
+	
 	for(int i = ystart; i != yend;){
 		MemAddr += StartMemSkip >> 1;
 		
-		j = xstart; 
+		j = xstart;
+		if((StartMemSkip & 0x1)) j+=xinc;
+
 		for(; j != xend;)
 		{	
-			if(xstart > xend) MemPos = (j - xstart) & 0x1;
-			else MemPos = (xstart - j) & 0x1;
+			MemPos = ((xstart - j) & 0x1);
 
 			curpixel = CPU::ReadMem8(MemAddr & 0xffff);
 			curpixel = curpixel >> ((~MemPos & 0X1) << 2) & 0xf;
