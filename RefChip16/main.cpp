@@ -51,6 +51,7 @@ int fps2 = 0;
 char headingstr [128];
 char inisettings[4];
 char MenuScale = 1;
+char LoggingEnable = 0;
 int prev_v_cycle = 0;
 unsigned int v_cycle = prev_v_cycle;
 time_t counter;
@@ -81,6 +82,7 @@ int SaveIni(){
 		inisettings[0] = Recompiler;
 		inisettings[1] = MenuVSync;
 		inisettings[2] = MenuScale;
+		inisettings[3] = LoggingEnable;
 		
 		rewind (iniFile);
 		
@@ -88,18 +90,19 @@ int SaveIni(){
 		fwrite(&inisettings,1,4,iniFile); //Read in the file
 		CPU_LOG("pos %d\n", Recompiler, MenuVSync, MenuScale, ftell(iniFile));
 		fclose(iniFile); //Close the file
-#ifdef LOGGINGENABLED
-		fclose(LogFile); 
-#endif
+
+		if(LoggingEnable)
+			fclose(LogFile); 
+
 		return 0;
 	} 
 	else
 	{
 		CPU_LOG("Error Saving Ini\n");
 		//User cancelled, either way, do nothing.
-#ifdef LOGGINGENABLED
-		fclose(LogFile); 
-#endif
+		if(LoggingEnable)
+			fclose(LogFile); 
+
 		return 1;
 	}	
 }
@@ -118,6 +121,7 @@ int LoadIni(){
 			Recompiler = inisettings[0];
 			MenuVSync = inisettings[1];
 			MenuScale = inisettings[2];
+			LoggingEnable = inisettings[3];
 			switch(MenuScale)
 			{
 			case 1:
@@ -140,6 +144,7 @@ int LoadIni(){
 			Recompiler = 1;
 			MenuVSync = 1;
 			MenuScale = 1;
+			LoggingEnable = 0;
 			SCREEN_WIDTH = 320;
 			SCREEN_HEIGHT = 240;
 			CPU_LOG("Defaults loaded, new ini\n");
@@ -161,7 +166,7 @@ int LoadIni(){
 
 void UpdateTitleBar(HWND hWnd)
 {
-	sprintf_s(headingstr, "RefChip16 V1.45 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
+	sprintf_s(headingstr, "RefChip16 V1.46 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
 	SetWindowText(hWnd, headingstr);
 }
 // The entry point for any Windows program
@@ -186,8 +191,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.lpszClassName = "WindowClass";
 	srand ( (int)time(NULL) );
 	RegisterClassEx(&wc);
-	OpenLog();
+
 	LoadIni();
+	if(LoggingEnable)
+			OpenLog();
 	// calculate the size of the client area
     RECT wr = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};    // set the size, but not the position
     AdjustWindowRect(&wr, WS_CAPTION|WS_MINIMIZE|WS_SYSMENU, TRUE);    // adjust the size
@@ -291,6 +298,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 					if(Recompiler == 1)
 					{
+						if(StackPTR < 0xFDF0) CPU_LOG("Stack Underflow! Recompiler StackPTR = %x", StackPTR);
+						if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! Recompiler StackPTR = %x", StackPTR);
 						RefChip16RecCPU->EnterRecompiledCode();
 					}
 					else
@@ -317,6 +326,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #define     ID_WINDOWX1    1007
 #define     ID_WINDOWX2    1008
 #define     ID_WINDOWX3    1009
+#define     ID_LOGGING	   1010
 
 void ToggleRecompilerState(HWND hWnd)
 {
@@ -397,6 +407,28 @@ void ToggleVSync(HWND hWnd)
 	SetMenuItemInfo(hSubMenu2, ID_VSYNC, FALSE, &mii); 
 }
 
+void ToggleLogging(HWND hWnd)
+{
+	HMENU hmenuBar = GetMenu(hWnd); 
+	MENUITEMINFO mii; 
+
+	memset( &mii, 0, sizeof( MENUITEMINFO ) );
+	mii.cbSize = sizeof(MENUITEMINFO);
+	mii.fMask = MIIM_STATE;    // information to get 
+	//Grab Logging state
+	GetMenuItemInfo(hSubMenu2, ID_LOGGING, FALSE, &mii);
+	// Toggle the checked state. 
+	LoggingEnable = !LoggingEnable;
+	mii.fState ^= MFS_CHECKED; 
+	// Write the new state to the Logging flag.
+	SetMenuItemInfo(hSubMenu2, ID_LOGGING, FALSE, &mii); 
+
+	if(LoggingEnable == 1)
+		OpenLog();
+	else
+		fclose(LogFile); 
+}
+
 // this is the main message handler for the program
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -412,13 +444,14 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		  hSubMenu2 = CreatePopupMenu();
 		  AppendMenu(hSubMenu, MF_STRING, ID_OPEN, "&Open");
 		  AppendMenu(hSubMenu, MF_STRING, ID_EXIT, "E&xit");
-		  CPU_LOG("MenuScale %x", MenuScale);
+		  
 		  AppendMenu(hSubMenu2, MF_STRING| (Recompiler == 0 ? MF_CHECKED : 0), ID_INTERPRETER, "Enable &Interpreter");
 		  AppendMenu(hSubMenu2, MF_STRING| (Recompiler == 1 ? MF_CHECKED : 0), ID_RECOMPILER, "Enable &Recompiler");
 		  AppendMenu(hSubMenu2, MF_STRING| (MenuVSync == 1 ? MF_CHECKED : 0), ID_VSYNC, "&Vertical Sync");
 		  AppendMenu(hSubMenu2, MF_STRING| (MenuScale == 1 ? MF_CHECKED : 0), ID_WINDOWX1, "WindowScale 320x240 (x&1)");
 		  AppendMenu(hSubMenu2, MF_STRING| (MenuScale == 2 ? MF_CHECKED : 0), ID_WINDOWX2, "WindowScale 640x480 (x&2)");
 		  AppendMenu(hSubMenu2, MF_STRING| (MenuScale == 3 ? MF_CHECKED : 0), ID_WINDOWX3, "WindowScale 960x720 (x&3)");
+		  AppendMenu(hSubMenu2, MF_STRING| (LoggingEnable == 1 ? MF_CHECKED : 0), ID_LOGGING, "Enable Logging");
 		  InsertMenu(hMenu, 0, MF_POPUP|MF_BYPOSITION, (UINT_PTR)hSubMenu, "File");
 		  InsertMenu(hMenu, 1, MF_POPUP|MF_BYPOSITION, (UINT_PTR)hSubMenu2, "Settings");
 		  InsertMenu(hMenu, 2, MF_STRING, ID_ABOUT, "&About");
@@ -508,8 +541,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		  case ID_WINDOWX3:
 			  ChangeScale(hWnd, ID_WINDOWX3);
 			  break;
+		  case ID_LOGGING:
+			  ToggleLogging(hWnd);
+			  break;
 		  case ID_ABOUT :
-				 MessageBox(hWnd, "RefChip16 V1.45 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
+				 MessageBox(hWnd, "RefChip16 V1.46 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
 		  case ID_EXIT :
 			 DestroyWindow(hWnd);

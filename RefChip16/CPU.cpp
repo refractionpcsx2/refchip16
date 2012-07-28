@@ -63,7 +63,7 @@ char Recompiler = 1;
 bool drawing = false;
 FILE * LogFile; 
 unsigned short StackPTR;
-short GPR[16];
+unsigned short GPR[16];
 unsigned char Memory[64*1024];
 unsigned char ROMHeader[16];
 
@@ -211,16 +211,16 @@ void CpuCore()
 		SpriteSet.Width =  (OpCode & 0xFF) * 2;
 		break;
 	case 0x5: //Draw Sprite from Mem addr
-		X = REG_X;
-		Y = REG_Y;
+		X = (short)REG_X;
+		Y = (short)REG_Y;
 		MemAddr = IMMEDIATE;
 
 		//CPU_LOG("Draw Sprite at Cords X = %d Y = %d, Mem = %x\n", X, Y, MemAddr);
 		DrawSprite(MemAddr, X, Y);
 		break;
 	case 0x6: //Draw Sprite from Register addr
-		X = REG_X;
-		Y = REG_Y;
+		X = (short)REG_X;
+		Y = (short)REG_Y;
 		MemAddr = REG_Z;
 
 		//CPU_LOG("Draw Sprite at Cords from reg %x X = %d Y = %d, Mem = %x\n", (OpCode >> 8) & 0xf, X, Y, MemAddr);
@@ -319,6 +319,7 @@ void CpuJump()
 		StackPTR += 2;
 		PC = IMMEDIATE;
 		cpubranch = 2;
+		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! CALL IMM");
 		break;
 	//Return from subroutine (POP PC from stack)
 	case 0x5:
@@ -326,6 +327,7 @@ void CpuJump()
 		StackPTR -= 2;
 		PC = ReadMem(StackPTR);
 		cpubranch = 2;
+		if(StackPTR < 0xFDF0) CPU_LOG("Stack Underflow! RET");
 		break;
 	//Call Subroutine if condition x is true
 	case 0x7:
@@ -337,6 +339,7 @@ void CpuJump()
 			PC = IMMEDIATE;
 			cpubranch = 2;
 		}
+		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! RET Cond");
 		break;
 	//Call Subroutine in Regsiter X
 	case 0x8:
@@ -346,6 +349,7 @@ void CpuJump()
 		StackPTR += 2;
 		PC = X;
 		cpubranch = 2;
+		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! CALL REGX");
 		break;
 	default:
 		//CPU_LOG("Bad Jump Op %x\n", PC);
@@ -367,6 +371,8 @@ void CpuLoad()
 	case 0x1:
 		//CPU_LOG("Load Imm to StackPTR, imm = %x, PC %x\n", IMMEDIATE, PC);
 		StackPTR = IMMEDIATE;
+		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! LDM STACKPTR");
+		if(StackPTR < 0xFDF0) CPU_LOG("Stack Underflow! LDM STACKPTR");
 		break;
 	//Load Register with value at imm address
 	case 0x2:
@@ -791,10 +797,12 @@ void CpuPushPop()
 		//CPU_LOG("Store Register X(%x) value %x on stack PC = %x\n", (OpCode >> 16) & 0xff, REG_X, PC);
 		WriteMem(StackPTR, REG_X);
 		StackPTR += 2;
+		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! PUSH X");
 		break;
 	//Decrease Stack Pointer and load value in to Reg X (X is actually in the first nibble)
 	case 0x1:
 		StackPTR -= 2;
+		if(StackPTR < 0xFDF0) CPU_LOG("Stack Underflow! POP X");
 		//CPU_LOG("Store Register X(%x) value %x from stack PC = %x\n", (OpCode >> 16) & 0xff, ReadMem(StackPTR), PC);
 		REG_X = ReadMem(StackPTR);
 		break;
@@ -806,6 +814,7 @@ void CpuPushPop()
 			WriteMem(StackPTR, GPR[i]);
 			StackPTR += 2;
 		}
+		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! PUSH All");
 		break;
 	//Decrease SP by 32 and POP all GPR registers
 	case 0x3:
@@ -815,16 +824,19 @@ void CpuPushPop()
 			StackPTR -= 2;
 			GPR[i] = ReadMem(StackPTR);			
 		}
+		if(StackPTR < 0xFDF0) CPU_LOG("Stack Underflow! POP All");
 		break;
 	//Store flags register on stack, increase SP by 2
 	case 0x4:
 		//CPU_LOG("Store Flags (%x) on stack PC = %x\n", Flag._u16, PC);
 		WriteMem(StackPTR, Flag._u16);
 		StackPTR += 2;
+		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! Store Flags");
 		break;
 	//Decrease SP by 2, restore flags register
 	case 0x5:
 		StackPTR -= 2;
+		if(StackPTR < 0xFDF0) CPU_LOG("Stack Underflow! POP Flags");
 		//CPU_LOG("Restore Flags (%x) from stack PC = %x\n", ReadMem(StackPTR), PC);
 		Flag._u16 = ReadMem(StackPTR);
 		break;
@@ -876,11 +888,8 @@ void CpuPallate()
 }
 void OpenLog()
 {
-#ifdef LOGGINGENABLED
 	fopen_s(&LogFile, ".\\c16Log.txt","w"); 
 	//setbuf( LogFile, NULL );
-#endif
-
 }
 
 void Reset()
@@ -985,7 +994,7 @@ int LoadRom(const char *Filename){
 }
 
 void __Log(char *fmt, ...) {
-#ifdef LOGGINGENABLED
+//#ifdef LOGGINGENABLED
 	va_list list;
 
 
@@ -994,20 +1003,20 @@ void __Log(char *fmt, ...) {
 	va_start(list, fmt);
 	vfprintf_s(LogFile, fmt, list);
 	va_end(list);
-#endif
+//#endif
 }
 
 void __Log2(char *fmt, ...) {
-#ifdef LOGGINGENABLED
+//#ifdef LOGGINGENABLED
 	va_list list;
 
 
 	if (LogFile == NULL) return;
-	
+
 	va_start(list, fmt);
 	vfprintf_s(LogFile, fmt, list);
 	va_end(list);
-#endif
+//#endif
 }
 
 }
