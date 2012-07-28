@@ -118,7 +118,7 @@ Memory:
 0xFFF0 - IO ports.
 */
 		extern unsigned short StackPTR;
-		extern short GPR[16];
+		extern unsigned short GPR[16];
 		extern unsigned char Memory[64*1024];
 		
 
