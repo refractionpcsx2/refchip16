@@ -105,9 +105,7 @@ unsigned short __fastcall GenerateRandom(unsigned long immediate)
 
 	randval = rand(); 
 	lastrandom ^= randval;
-	lastrandom ^= time(NULL);
 	randval = lastrandom % immediate;
-	CPU_LOG("Random  number generated %x max %x\n", randval, immediate-1);
 	return randval;
 }
 //This function handles the Conditions for the CPU, it is represented by a number, so this is the best way we're gonna do it!
@@ -880,7 +878,7 @@ void OpenLog()
 {
 #ifdef LOGGINGENABLED
 	fopen_s(&LogFile, ".\\c16Log.txt","w"); 
-//	setbuf( LogFile, NULL );
+	//setbuf( LogFile, NULL );
 #endif
 
 }
