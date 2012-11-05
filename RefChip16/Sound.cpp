@@ -193,7 +193,7 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 	int CurSample = 0;
 	double VolumeModifier = 1.0f;
 	double SampleLength = (double)(44100 / 1000);  //44100 samples per second / 1000 ms = 44.1 samples every ms * Period to play for
-	int Volume = 0;
+	double Volume = 0;
 	int SamplePeriod = (int)(Period * SampleLength);
 	int AttackSamples = (int)(SampleLength * DSPSettings.Attack[DSPSettings.CurAttack]);
 	int DecaySamples = (int)(SampleLength * DSPSettings.Decay[DSPSettings.CurDecay]);
@@ -270,15 +270,16 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 		//This is a bit of a pig, but at some frequencies, we lose steps
 		VolumeModifier = (double)((1.0f / (double)AttackSamples ) * (double)CurSample);
 		Volume = (int)(DSPSettings.Amplitude * VolumeModifier);
-
+		
 		WaveData[CurSample] = (short)(WaveData[CurSample] * ((double)Volume / (double)DSPSettings.Amplitude));		
-		//CPU_LOG("Attack Vol %x Sample %x\n", Volume, WaveData[CurSample]);
 	}
+	
 	DSPSettings.Length += CurSample; //Log this for the start of the next part of the ADSR check
-
+	
 	//Process Decay	
-	double VolumeDecay = (1.0f / Volume) * (Volume - (int)(DSPSettings.Amplitude * DSPSettings.Sustain[DSPSettings.CurSustain]));
-			
+
+	double DecayVolume = (1.0f - DSPSettings.Sustain[DSPSettings.CurSustain]);
+
 	for(CurSample = 0; CurSample < DecaySamples && (CurSample + DSPSettings.Length) < SamplePeriod; CurSample++)
 	{
 		switch(DSPSettings.WaveformType)
@@ -301,12 +302,13 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 				WaveData[CurSample + DSPSettings.Length] = GenerateTriangleSample();
 			break;
 		}
-		VolumeModifier = 1.0f - (double)((VolumeDecay / (double)DecaySamples ) * (double)CurSample);
-		Volume = (int)(DSPSettings.Amplitude * VolumeModifier);
+		VolumeModifier = (double)(1.0f - ((DecayVolume / (double)DecaySamples) * (double)CurSample));
+		Volume = DSPSettings.Amplitude * VolumeModifier;
 		
 		WaveData[CurSample + DSPSettings.Length] = (short)(WaveData[CurSample + DSPSettings.Length] * ((double)Volume / (double)DSPSettings.Amplitude));	
-		//CPU_LOG("Decay Vol %x Sample %x\n", Volume, WaveData[CurSample]);
 	}
+
+	DSPSettings.Length += CurSample; //Log this for the start of the next part of the ADSR check
 
 	//Process Sustain
 	for(CurSample = 0; CurSample + DSPSettings.Length < SamplePeriod; CurSample++)
@@ -333,11 +335,11 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 				WaveData[CurSample + DSPSettings.Length] = GenerateTriangleSample();
 			break;
 		}
-		
-		WaveData[CurSample + DSPSettings.Length] = (short)(WaveData[CurSample + DSPSettings.Length] * DSPSettings.Sustain[DSPSettings.CurSustain]);
 
-		//CPU_LOG("Sustain Vol %x Sample %x\n", Volume, WaveData[CurSample]);
+		WaveData[CurSample + DSPSettings.Length] = (short)(WaveData[CurSample + DSPSettings.Length] * DSPSettings.Sustain[DSPSettings.CurSustain]);
 	}
+
+	Volume = DSPSettings.Amplitude * DSPSettings.Sustain[DSPSettings.CurSustain]; //Make sure our volume is correct
 
 	DSPSettings.Length += CurSample; //Log this for the start of the next part of the ADSR check
 
@@ -364,12 +366,10 @@ void SoundDevice::GenerateHz(int Rate, int Period)
 				WaveData[CurSample + DSPSettings.Length] = GenerateTriangleSample();
 			break;
 		}
+		VolumeModifier = (double)(DSPSettings.Sustain[DSPSettings.CurSustain] - ((DSPSettings.Sustain[DSPSettings.CurSustain] / (double)ReleaseSamples) * (double)CurSample));
+		Volume = DSPSettings.Amplitude * VolumeModifier;
 
-		VolumeModifier = 1.0f - (double)((1.0f / (double)ReleaseSamples ) * (double)CurSample);
-		Volume = (int)((DSPSettings.Amplitude * DSPSettings.Sustain[DSPSettings.CurSustain]) * VolumeModifier);
-		
 		WaveData[CurSample + DSPSettings.Length] = (short)(WaveData[CurSample + DSPSettings.Length]  * ((double)Volume / (double)DSPSettings.Amplitude));
-		//CPU_LOG("Release Vol %x Sample %x\n", Volume, WaveData[CurSample]);
 	}
 
 	DSPSettings.Length += CurSample; //Log this for the start of the next part of the ADSR check
