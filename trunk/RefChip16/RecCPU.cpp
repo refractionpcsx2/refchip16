@@ -103,9 +103,10 @@ void RecCPU::ResetRecMem()
 {
 	RefChip16Emitter->SetPTR((unsigned char*)codebuffer);
 	recPC = 0;
-
+	memset(codebuffer, NULL, sizeof(codebuffer));
 	FlushConstRegisters(false);
 	GPRStatus.LiveGPRReg = 0xffff;
+	memset(RecMemory, NULL, sizeof(RecMemory));
 	memset(PCIndex, NULL, sizeof(PCIndex));
 }
 

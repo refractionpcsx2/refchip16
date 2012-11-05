@@ -44,6 +44,7 @@ HBITMAP LogoJPG = NULL;
 HWND hwndSDL;
 
 char szFileName[MAX_PATH] = "";
+char CurFilename[MAX_PATH] = "";
 int LoadSuccess = 0;
 __int64 vsyncstart, vsyncend;
 unsigned char framenumber;
@@ -166,7 +167,7 @@ int LoadIni(){
 
 void UpdateTitleBar(HWND hWnd)
 {
-	sprintf_s(headingstr, "RefChip16 V1.46 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
+	sprintf_s(headingstr, "RefChip16 V1.5 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
 	SetWindowText(hWnd, headingstr);
 }
 // The entry point for any Windows program
@@ -189,7 +190,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
 	wc.lpszClassName = "WindowClass";
-	srand ( (int)time(NULL) );
+	
 	RegisterClassEx(&wc);
 
 	LoadIni();
@@ -318,6 +319,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 }
 
 #define     ID_OPEN        1000
+#define     ID_RESET	   1001
 #define     ID_EXIT        1002
 #define		ID_ABOUT	   1003
 #define		ID_INTERPRETER 1004
@@ -443,6 +445,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		  hSubMenu = CreatePopupMenu();
 		  hSubMenu2 = CreatePopupMenu();
 		  AppendMenu(hSubMenu, MF_STRING, ID_OPEN, "&Open");
+		  AppendMenu(hSubMenu, MF_STRING, ID_RESET, "R&eset");
 		  AppendMenu(hSubMenu, MF_STRING, ID_EXIT, "E&xit");
 		  
 		  AppendMenu(hSubMenu2, MF_STRING| (Recompiler == 0 ? MF_CHECKED : 0), ID_INTERPRETER, "Enable &Interpreter");
@@ -482,7 +485,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		  switch(LOWORD(wParam))
 		  {
 		  case ID_OPEN :
-			ZeroMemory( &ofn , sizeof( ofn));
+			ZeroMemory( &ofn , sizeof( ofn ));
 			ofn.lStructSize = sizeof ( ofn );
 			ofn.hwndOwner = NULL ;
 			ofn.lpstrFile = szFileName ;
@@ -502,6 +505,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				else if(LoadSuccess == 2) MessageBox(hWnd, "Error Loading Game - Spec too new, please check for update", "Error!",0);
 				else 
 				{
+					strcpy_s(CurFilename, szFileName);
 					RefChip16RecCPU->ResetRecMem();
 					Running = true;
 					InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);	
@@ -512,6 +516,23 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				}
 			}			
 			break;
+		  case ID_RESET:
+			 if(Running == true)
+			 {
+				 LoadSuccess = LoadRom(CurFilename);
+				 if(LoadSuccess == 1) MessageBox(hWnd, "Error Loading Game", "Error!", 0);
+				 else if(LoadSuccess == 2) MessageBox(hWnd, "Error Loading Game - Spec too new, please check for update", "Error!",0);
+				 else 
+				 {
+					 RefChip16RecCPU->ResetRecMem();
+					 InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);	
+				 	
+					 v_cycle = SDL_GetTicks();
+					 prev_v_cycle = v_cycle;
+					 counter = time(NULL);
+				 }
+			 }
+			 break;
 		  case ID_INTERPRETER :
 			if(Recompiler == 1)
 			{			
@@ -545,7 +566,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			  ToggleLogging(hWnd);
 			  break;
 		  case ID_ABOUT :
-				 MessageBox(hWnd, "RefChip16 V1.46 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
+				 MessageBox(hWnd, "RefChip16 V1.5 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
 		  case ID_EXIT :
 			 DestroyWindow(hWnd);

@@ -899,7 +899,8 @@ void Reset()
 	StackPTR = 0xFDF0;
 	cycles = 0;
 	nextvsync = 0;
-	
+	srand ( (int)time(NULL) );
+
 	for(int i = 0; i < 16; i++) 
 		GPR[i] = 0;
 	memset(Memory, 0, sizeof(Memory));
