@@ -162,10 +162,10 @@ unsigned char* RecCPU::RecompileBlock()
 		
 		recOpCode = ReadMem(PC + 2) | (ReadMem(PC) << 16);
 		RecMemory[PC] = recPC;
+		RecMemory[PC+2] = recPC;
 		PC+=4;
 		PCIndex[recPC].BlockCycles++;
-		PCIndex[recPC].EndPC = PC;
-
+		
 		switch(recOpCode>>20 & 0xf)
 		{
 			case 0x0: recCpuCore(); break;
@@ -189,6 +189,7 @@ unsigned char* RecCPU::RecompileBlock()
 		}
 		if(cycles + PCIndex[recPC].BlockCycles >= (nextvsync + ((1000000/60) * fps))) break;
 	}
+	PCIndex[recPC].EndPC = PC;
 	ClearLiveRegister(0xffff, true);
 	//FPS_LOG("Block Length %x\n", PCIndex[recPC].BlockCycles);
 	if(cpubranch != 3) RefChip16Emitter->ADD32ItoM((unsigned int)&cycles, PCIndex[recPC].BlockCycles);
