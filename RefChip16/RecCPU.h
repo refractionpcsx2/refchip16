@@ -62,6 +62,7 @@ class RecCPU
 		void recCpuShift();
 		void recCpuPushPop();
 		void recCpuPallate();
+		void recCpuNOTNEG();
 };
 
 #endif

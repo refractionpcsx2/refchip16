@@ -183,6 +183,7 @@ unsigned char* RecCPU::RecompileBlock()
 			case 0xB: recCpuShift(); break;
 			case 0xC: recCpuPushPop(); break;
 			case 0xD: recCpuPallate(); break;
+			case 0xE: recCpuNOTNEG(); break;
 
 			default:
 				CPU_LOG("Unknown Op\n");
@@ -2249,6 +2250,20 @@ void RecCPU::recCpuPallate()
 		FlushConstRegisters(true);
 		RefChip16Emitter->MOV32ItoM((unsigned int)&OpCode, recOpCode);
 		RefChip16Emitter->CALL(CpuPallate);
+		break;
+	}
+}
+
+void RecCPU::recCpuNOTNEG()
+{
+	RefChip16Emitter->AND16ItoM((unsigned int)&Flag._u16, ~0x84);
+	switch((recOpCode >> 16) & 0xf)
+	{
+	default:
+		ClearLiveRegister(0xffff, true);
+		FlushConstRegisters(true);
+		RefChip16Emitter->MOV32ItoM((unsigned int)&OpCode, recOpCode);
+		RefChip16Emitter->CALL(CpuNOTNEG);
 		break;
 	}
 }
