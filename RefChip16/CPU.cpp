@@ -716,6 +716,7 @@ int DivSetFlags(unsigned short CalcResult, int Remainder)
  
 void CpuDiv()
 {
+	short TempResult = 0;
 	//CPU_LOG("DIV Op %x\n", PC);
 	switch((OpCode >> 16 & 0xf))
 	{
@@ -733,6 +734,42 @@ void CpuDiv()
 	case 0x2:
 		//CPU_LOG("DIV Z = X / Y, X = %x, Y = %x, result = %x, PC %x\n", REG_X, REG_Y, REG_X / REG_Y, PC);
 		REG_Z = DivSetFlags(REG_X / REG_Y, REG_X % REG_Y);
+		break;
+	// X = X MOD imm [z,n]
+	case 0x3:
+		TempResult = (short)REG_X % IMMEDIATE;
+		if((REG_X & 0x8000) ^ (IMMEDIATE & 0x8000)) REG_X = TempResult + IMMEDIATE;
+		else REG_X = TempResult;
+		LogicCMP(REG_X);
+		break;
+	// X = X MOD Y [z,n]
+	case 0x4:
+		TempResult = (short)REG_X % (short)REG_Y;
+		if((REG_X & 0x8000) ^ (REG_Y & 0x8000)) REG_X = TempResult + (short)REG_Y;
+		else REG_X = TempResult;
+		LogicCMP(REG_X);
+		break;
+	// Z = X MOD Y [z,n]
+	case 0x5:
+		TempResult = (short)REG_X % (short)REG_Y;
+		if((REG_X & 0x8000) ^ (REG_Y & 0x8000)) REG_Z = TempResult + (short)REG_Y;
+		else REG_Z = TempResult;
+		LogicCMP(REG_Z);
+		break;
+	// X = X % imm [z,n]
+	case 0x6:
+		REG_X = (short)REG_X % IMMEDIATE;
+		LogicCMP(REG_X);
+		break;
+	// X = X % Y [z,n]
+	case 0x7:
+		REG_X = (short)REG_X % (short)REG_Y;
+		LogicCMP(REG_X);
+		break;
+	// Z = X % Y [z,n]
+	case 0x8:
+		REG_Z = (short)REG_X % (short)REG_Y;
+		LogicCMP(REG_Z);
 		break;
 	default:
 		//CPU_LOG("Bad DIV Op %x\n", PC);
@@ -886,6 +923,38 @@ void CpuPallate()
 		break;
 	}
 }
+
+void CpuNOTNEG()
+{
+	switch((OpCode >> 16 & 0xf))
+	{
+		case 0x0:
+			REG_X = ~IMMEDIATE;
+			LogicCMP(REG_X);
+			break;
+		case 0x1:
+			REG_X = ~REG_X;
+			LogicCMP(REG_X);
+			break;
+		case 0x2:
+			REG_X = ~REG_Y;
+			LogicCMP(REG_X);
+			break;
+		case 0x3:
+			REG_X = -IMMEDIATE;
+			LogicCMP(REG_X);
+			break;
+		case 0x4:
+			REG_X = -REG_X;
+			LogicCMP(REG_X);
+			break;
+		case 0x5:
+			REG_X = -REG_Y;
+			LogicCMP(REG_X);
+			break;
+	}
+}
+
 void OpenLog()
 {
 	fopen_s(&LogFile, ".\\c16Log.txt","w"); 
@@ -937,6 +1006,7 @@ void ExecuteOp()
 		case 0xB: CpuShift(); break;
 		case 0xC: CpuPushPop(); break;
 		case 0xD: CpuPallate(); break;
+		case 0xE: CpuNOTNEG(); break;
 		default:
 			//CPU_LOG("Unknown Op\n");
 			break;
@@ -976,7 +1046,7 @@ int LoadRom(const char *Filename){
 		{
 			CPU_LOG("Rom Spec Version %d.%d\n", (ROMHeader[5] >> 4) & 0xF, ROMHeader[5] & 0xF);
 			//Check the spec isnt newer than what is currently implemented!
-			if(ROMHeader[5] > 0x11) 
+			if(ROMHeader[5] > 0x13) 
 			{
 				return 2;
 			}

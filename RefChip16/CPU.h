@@ -105,6 +105,7 @@ class CPU
 		void CpuShift();
 		void CpuPushPop();
 		void CpuPallate();
+		void CpuNOTNEG();
 
 		extern FILE * LogFile; 
 		
