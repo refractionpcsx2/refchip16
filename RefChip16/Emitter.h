@@ -80,6 +80,8 @@ class Emitter
 		void XOR16MtoR( X86RegisterType dest, unsigned int src );
 		void XOR16RtoR(X86RegisterType dest, X86RegisterType src);
 		void XOR32RtoR(X86RegisterType dest, X86RegisterType src);
+		void NOT16R(X86RegisterType src);
+		void NEG16R(X86RegisterType src);
 		void SHL16ItoR( X86RegisterType dest, int imm);
 		void SHL16CLtoR( X86RegisterType dest);
 		void SHR16ItoR( X86RegisterType dest, int imm);

@@ -35,7 +35,7 @@ class RecCPU
 		unsigned char* __fastcall ExecuteBlock(); //This function returns the codebuffer pointer for start of rec code.
 		void FlushConstRegisters(bool flush);
 		void CheckLiveRegister(unsigned char GPRReg, bool writeback);
-		void FlushLiveRegister(unsigned short GPRReg);
+		void FlushLiveRegister();
 		void ClearLiveRegister(unsigned short GPRReg, bool flush);
 		void SetLiveRegister(unsigned char GPRReg);
 		void MoveLiveRegister(unsigned short GPRReg, X86RegisterType to);

@@ -248,7 +248,7 @@ void RecCPU::CheckLiveRegister(unsigned char GPRReg, bool writeback)
 	//CPU_LOG("REGCACHE Live reg now %d\n", GPRStatus.LiveGPRReg);
 }
 
-void RecCPU::FlushLiveRegister(unsigned short GPRReg)
+void RecCPU::FlushLiveRegister()
 {
 #ifdef REG_CACHING
 	//CPU_LOG("REGCACHE reg %d is live, flushing back to reg, leaving in EAX!\n", GPRStatus.LiveGPRReg);
@@ -1036,7 +1036,7 @@ void RecCPU::recCpuSub()
 	
 }
 
-//This function checks the Zero and Negative conditions from the results of the Logic tests (XOR, AND, OR)
+//This function checks the Zero and Negative conditions from the results of the Logic tests (XOR, AND, OR, NOT, NEG)
 void RecCPU::recTestLogic()
 {		
 	RefChip16Emitter->CMP16ItoR(EAX, 0); //See if the result was zero
@@ -2259,6 +2259,141 @@ void RecCPU::recCpuNOTNEG()
 	RefChip16Emitter->AND16ItoM((unsigned int)&Flag._u16, ~0x84);
 	switch((recOpCode >> 16) & 0xf)
 	{
+	case 0x0:
+		if(CONST_PROP)
+		{
+			int flags = 0;
+
+			GPRStatus.GPRConstVal[Op_X] = ~IMMEDIATE;
+			GPRStatus.GPRIsConst[Op_X] = true;
+
+			if(GPRStatus.GPRConstVal[Op_X] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_X] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+		}
+		else 
+		{
+			FlushLiveRegister();
+		
+			RefChip16Emitter->MOV16ItoR(EAX, ~IMMEDIATE);
+			SetLiveRegister(Op_X);		
+			recTestLogic();
+		}
+		break;
+	case 0x1:
+		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
+		{
+			int flags = 0;
+
+			GPRStatus.GPRConstVal[Op_X] = ~GPRStatus.GPRConstVal[Op_X];
+				
+			if(GPRStatus.GPRConstVal[Op_X] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_X] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+		}
+		else 
+		{
+			CheckLiveRegister(Op_X, false);
+		
+			RefChip16Emitter->NOT16R(EAX);
+			SetLiveRegister(Op_X);		
+			recTestLogic();
+		}
+		break;
+	case 0x2:
+		if(CONST_PROP && GPRStatus.GPRIsConst[Op_Y] == true)
+		{
+			int flags = 0;
+
+			GPRStatus.GPRConstVal[Op_X] = ~GPRStatus.GPRConstVal[Op_Y];
+			GPRStatus.GPRIsConst[Op_X] = true;
+
+			ClearLiveRegister(Op_X, false);
+
+			if(GPRStatus.GPRConstVal[Op_X] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_X] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+		}
+		else 
+		{
+			CheckLiveRegister(Op_Y, true);
+		
+			RefChip16Emitter->NOT16R(EAX);
+			SetLiveRegister(Op_X);	
+			GPRStatus.GPRIsConst[Op_X] = false;
+			recTestLogic();
+		}
+		break;
+	case 0x3:
+		if(CONST_PROP)
+		{
+			int flags = 0;
+
+			GPRStatus.GPRConstVal[Op_X] = -IMMEDIATE;
+			GPRStatus.GPRIsConst[Op_X] = true;
+			ClearLiveRegister(Op_X, false);
+
+			if(GPRStatus.GPRConstVal[Op_X] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_X] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+		}
+		else 
+		{
+			FlushLiveRegister();
+		
+			RefChip16Emitter->MOV16ItoR(EAX, -IMMEDIATE);
+			SetLiveRegister(Op_X);		
+			recTestLogic();
+		}
+		break;
+	case 0x4:
+		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
+		{
+			int flags = 0;
+
+			GPRStatus.GPRConstVal[Op_X] = -GPRStatus.GPRConstVal[Op_X];
+				
+			if(GPRStatus.GPRConstVal[Op_X] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_X] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+		}
+		else 
+		{
+			FlushConstRegisters(true);
+			CheckLiveRegister(Op_X, false);
+		
+			RefChip16Emitter->NEG16R(EAX);
+			SetLiveRegister(Op_X);		
+			recTestLogic();
+		}
+		break;
+	case 0x5:
+		if(CONST_PROP && GPRStatus.GPRIsConst[Op_Y] == true)
+		{
+			int flags = 0;
+
+			GPRStatus.GPRConstVal[Op_X] = -GPRStatus.GPRConstVal[Op_Y];
+			GPRStatus.GPRIsConst[Op_X] = true;
+			if(GPRStatus.GPRConstVal[Op_X] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_X] & 0x8000) flags |= 0x80;
+
+			ClearLiveRegister(Op_X, false);
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+		}
+		else 
+		{			
+			CheckLiveRegister(Op_Y, true);
+			RefChip16Emitter->NEG16R(EAX);
+			SetLiveRegister(Op_X);		
+			recTestLogic();
+		}
+		break;
 	default:
 		ClearLiveRegister(0xffff, true);
 		FlushConstRegisters(true);
