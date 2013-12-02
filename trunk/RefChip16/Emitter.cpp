@@ -468,6 +468,23 @@ void Emitter::XOR32RtoR(X86RegisterType dest, X86RegisterType src)
 	ModRM(3, src, dest);
 }
 
+/*NOT and NEG*/
+
+void Emitter::NOT16R(X86RegisterType src)
+{
+	RefChip16RecCPU->AddBlockInstruction();
+	*(unsigned char*)x86Ptr++ = 0x66; //Prefix not needed for native 32bit (0x66 for 16bit)
+	*(unsigned char*)x86Ptr++ = 0xF7; //The MOV from Mem to Reg opcode
+	ModRM( 3, 2, src );
+}
+
+void Emitter::NEG16R(X86RegisterType src)
+{
+	RefChip16RecCPU->AddBlockInstruction();
+	*(unsigned char*)x86Ptr++ = 0x66; //Prefix not needed for native 32bit (0x66 for 16bit)
+	*(unsigned char*)x86Ptr++ = 0xF7; //The MOV from Mem to Reg opcode
+	ModRM( 3, 3, src );
+}
 
 /*Shifts*/
 void Emitter::SHL16ItoR( X86RegisterType dest, int imm)
