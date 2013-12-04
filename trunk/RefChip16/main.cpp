@@ -167,7 +167,7 @@ int LoadIni(){
 
 void UpdateTitleBar(HWND hWnd)
 {
-	sprintf_s(headingstr, "RefChip16 V1.51 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
+	sprintf_s(headingstr, "RefChip16 V1.6 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
 	SetWindowText(hWnd, headingstr);
 }
 // The entry point for any Windows program
@@ -566,7 +566,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			  ToggleLogging(hWnd);
 			  break;
 		  case ID_ABOUT :
-				 MessageBox(hWnd, "RefChip16 V1.51 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
+				 MessageBox(hWnd, "RefChip16 V1.6 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
 		  case ID_EXIT :
 			 DestroyWindow(hWnd);
