@@ -1971,7 +1971,6 @@ void RecCPU::recCpuDiv()
 		}
 		else
 		{
-			if(IMMEDIATE == 1) CPU_LOG("DIV 1 IMM 1\n");
 			CheckLiveRegister(Op_X, false);
 			RefChip16Emitter->MOV16ItoR(ECX, IMMEDIATE);
 			RefChip16Emitter->DIV16RtoEAX(ECX);		
@@ -2094,6 +2093,193 @@ void RecCPU::recCpuDiv()
 
 				GPRStatus.GPRIsConst[Op_Z] = false;
 				SetLiveRegister(Op_Z);
+				recTestLogic();
+			}			
+		}
+		break;
+	//X = X MOD IMM [z,n]
+	case 0x9:
+		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
+		{
+			int flags = 0;
+			short TempResult = 0;
+
+			TempResult = (short)GPRStatus.GPRConstVal[Op_X] % (short)IMMEDIATE;
+			
+			if((GPRStatus.GPRConstVal[Op_X] & 0x8000) ^ (IMMEDIATE & 0x8000)) GPRStatus.GPRConstVal[Op_X] = TempResult + IMMEDIATE;
+			else GPRStatus.GPRConstVal[Op_X] = TempResult;
+
+			if(GPRStatus.GPRConstVal[Op_X] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_X] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+			GPRStatus.GPRIsConst[Op_X] = true;
+		}
+		else
+		{
+			CheckLiveRegister(Op_X, false);
+			RefChip16Emitter->MOV16ItoR(ECX, IMMEDIATE);
+			RefChip16Emitter->DIV16RtoEAX(ECX);		
+			CheckLiveRegister(Op_X, false);
+			RefChip16Emitter->XOR16RtoR(EAX, ECX);
+			RefChip16Emitter->AND16ItoR(EAX, 0x8000);
+
+			RefChip16Emitter->CMP16ItoR(EAX, 0x8000);
+			j32Ptr[0] = RefChip16Emitter->JNE32(0);
+
+			RefChip16Emitter->ADD16RtoR(EDX, ECX);
+
+			RefChip16Emitter->x86SetJ32( j32Ptr[0] );
+
+			RefChip16Emitter->MOV16RtoR(EAX, EDX);
+			SetLiveRegister(Op_X); //Shouldn't be needed, but just to be safe incase the moon aligns with alpha centuri
+			recTestLogic();
+		}
+		break;
+	//X = X MOD Y [z,n]
+	case 0xA:		
+		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true && GPRStatus.GPRIsConst[Op_Y] == true)
+		{
+			int flags = 0;
+			short TempResult = 0;
+
+			TempResult = (short)GPRStatus.GPRConstVal[Op_X] % (short)GPRStatus.GPRConstVal[Op_Y];
+			
+			if((GPRStatus.GPRConstVal[Op_X] & 0x8000) ^ (GPRStatus.GPRConstVal[Op_Y] & 0x8000)) GPRStatus.GPRConstVal[Op_X] = TempResult + (short)GPRStatus.GPRConstVal[Op_Y];
+			else GPRStatus.GPRConstVal[Op_X] = TempResult;
+
+			if(GPRStatus.GPRConstVal[Op_X] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_X] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+			GPRStatus.GPRIsConst[Op_X] = true;
+		}
+		else
+		{
+			if(Op_X == Op_Y) 
+			{
+				if(CONST_PROP)
+				{
+					GPRStatus.GPRIsConst[Op_X] = true;
+					GPRStatus.GPRConstVal[Op_X] = 0;						
+					ClearLiveRegister(Op_X, false);
+				}
+				else
+				{
+#ifdef REG_CACHING
+					ClearLiveRegister(0xffff, (Op_X == GPRStatus.LiveGPRReg) ? false : true);
+					RefChip16Emitter->MOV16ItoR(EAX, 0);
+					SetLiveRegister(Op_X);
+#else
+					RefChip16Emitter->MOV16ItoM((unsigned int)&REG_X, 0);
+#endif
+				}
+			}
+			else
+			{
+				if(CONST_PROP && GPRStatus.GPRIsConst[Op_Y] == true)
+				{
+						RefChip16Emitter->MOV16ItoR(ECX, GPRStatus.GPRConstVal[Op_Y]);
+				}
+				else MoveLiveRegister(Op_Y, ECX);
+
+				if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
+				{
+					ClearLiveRegister(0xffff, true);
+					RefChip16Emitter->MOV16ItoR(EAX, GPRStatus.GPRConstVal[Op_X]);
+					SetLiveRegister(Op_X);
+				}
+				else CheckLiveRegister(Op_X, false);
+
+				RefChip16Emitter->DIV16RtoEAX(ECX);		
+				CheckLiveRegister(Op_X, false);
+				RefChip16Emitter->XOR16RtoR(EAX, ECX);
+				RefChip16Emitter->AND16ItoR(EAX, 0x8000);
+
+				RefChip16Emitter->CMP16ItoR(EAX, 0x8000);
+				j32Ptr[0] = RefChip16Emitter->JNE32(0);
+
+				RefChip16Emitter->ADD16ItoR(EDX, ECX);
+
+				RefChip16Emitter->x86SetJ32( j32Ptr[0] );
+
+				RefChip16Emitter->MOV16RtoR(EAX, EDX);
+				GPRStatus.GPRIsConst[Op_X] = false;
+				SetLiveRegister(Op_X); //Shouldn't be needed, but just to be safe incase the moon aligns with alpha centuri
+				recTestLogic();
+			}			
+		}
+		break;
+	//Z = X MOD Y [z,n]
+	case 0xB:
+		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true && GPRStatus.GPRIsConst[Op_Y] == true)
+		{
+			int flags = 0;
+			short TempResult = 0;
+
+			TempResult = (short)GPRStatus.GPRConstVal[Op_X] % (short)GPRStatus.GPRConstVal[Op_Y];
+			
+			if((GPRStatus.GPRConstVal[Op_X] & 0x8000) ^ (GPRStatus.GPRConstVal[Op_Y] & 0x8000)) GPRStatus.GPRConstVal[Op_Z] = TempResult + (short)GPRStatus.GPRConstVal[Op_Y];
+			else GPRStatus.GPRConstVal[Op_Z] = TempResult;
+
+			if(GPRStatus.GPRConstVal[Op_Z] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_Z] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+			GPRStatus.GPRIsConst[Op_Z] = true;
+		}
+		else
+		{
+			if(Op_X == Op_Y) 
+			{
+				if(CONST_PROP)
+				{
+					GPRStatus.GPRIsConst[Op_Z] = true;
+					GPRStatus.GPRConstVal[Op_Z] = 0;						
+					ClearLiveRegister(Op_Z, false);
+				}
+				else
+				{
+#ifdef REG_CACHING
+					ClearLiveRegister(0xffff, (Op_X == GPRStatus.LiveGPRReg) ? false : true);
+					RefChip16Emitter->MOV16ItoR(EAX, 0);
+					SetLiveRegister(Op_Z);
+#else
+					RefChip16Emitter->MOV16ItoM((unsigned int)&REG_Z, 0);
+#endif
+				}
+			}
+			else
+			{
+				if(CONST_PROP && GPRStatus.GPRIsConst[Op_Y] == true)
+				{
+					RefChip16Emitter->MOV16ItoR(ECX, GPRStatus.GPRConstVal[Op_Y]);
+				}
+				else MoveLiveRegister(Op_Y, ECX);
+
+				if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
+				{
+					ClearLiveRegister(0xffff, (GPRStatus.LiveGPRReg == Op_Z) ? false : true);
+					RefChip16Emitter->MOV16ItoR(EAX, GPRStatus.GPRConstVal[Op_X]);
+					
+				}
+				else CheckLiveRegister(Op_X, (Op_X == Op_Z) ? false : true);
+
+				RefChip16Emitter->DIV16RtoEAX(ECX);		
+				CheckLiveRegister(Op_X, false);
+				RefChip16Emitter->XOR16RtoR(EAX, ECX);
+				RefChip16Emitter->AND16ItoR(EAX, 0x8000);
+
+				RefChip16Emitter->CMP16ItoR(EAX, 0x8000);
+				j32Ptr[0] = RefChip16Emitter->JNE32(0);
+
+				RefChip16Emitter->ADD16ItoR(EDX, ECX);
+
+				RefChip16Emitter->x86SetJ32( j32Ptr[0] );
+
+				RefChip16Emitter->MOV16RtoR(EAX, EDX);
+				GPRStatus.GPRIsConst[Op_Z] = false;
+				SetLiveRegister(Op_Z); //Really needed this time ;)
 				recTestLogic();
 			}			
 		}
