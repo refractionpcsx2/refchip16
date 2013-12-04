@@ -1880,7 +1880,6 @@ void RecCPU::recCpuDiv()
 				RefChip16Emitter->DIV16RtoEAX(ECX);	
 
 				recDIVCheckCarry();
-				RefChip16Emitter->MOV16RtoM((unsigned int)&REG_X, EAX);
 				GPRStatus.GPRIsConst[Op_X] = false;
 				SetLiveRegister(Op_X);
 				recTestLogic();
@@ -1949,6 +1948,149 @@ void RecCPU::recCpuDiv()
 
 				RefChip16Emitter->DIV16RtoEAX(ECX);	
 				recDIVCheckCarry();
+
+				GPRStatus.GPRIsConst[Op_Z] = false;
+				SetLiveRegister(Op_Z);
+				recTestLogic();
+			}			
+		}
+		break;
+	//X = X % IMM [z,n]
+	case 0x6:
+		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
+		{
+			int flags = 0;
+
+			GPRStatus.GPRConstVal[Op_X] = (short)GPRStatus.GPRConstVal[Op_X] % (short)IMMEDIATE;
+			
+			if(GPRStatus.GPRConstVal[Op_X] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_X] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+			GPRStatus.GPRIsConst[Op_X] = true;
+		}
+		else
+		{
+			if(IMMEDIATE == 1) CPU_LOG("DIV 1 IMM 1\n");
+			CheckLiveRegister(Op_X, false);
+			RefChip16Emitter->MOV16ItoR(ECX, IMMEDIATE);
+			RefChip16Emitter->DIV16RtoEAX(ECX);		
+			RefChip16Emitter->MOV16RtoR(EAX, EDX);
+			recTestLogic();
+		}
+		break;
+	//X = X % Y [z,n]
+	case 0x7:		
+		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true && GPRStatus.GPRIsConst[Op_Y] == true)
+		{
+			int flags = 0;
+
+			GPRStatus.GPRConstVal[Op_X] = (short)GPRStatus.GPRConstVal[Op_X] % (short)GPRStatus.GPRConstVal[Op_Y];
+
+			if(GPRStatus.GPRConstVal[Op_X] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_X] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+		}
+		else
+		{
+			if(Op_X == Op_Y) 
+			{
+				if(CONST_PROP)
+				{
+					GPRStatus.GPRIsConst[Op_X] = true;
+					GPRStatus.GPRConstVal[Op_X] = 0;						
+					ClearLiveRegister(Op_X, false);
+				}
+				else
+				{
+#ifdef REG_CACHING
+					ClearLiveRegister(0xffff, (Op_X == GPRStatus.LiveGPRReg) ? false : true);
+					RefChip16Emitter->MOV16ItoR(EAX, 0);
+					SetLiveRegister(Op_X);
+#else
+					RefChip16Emitter->MOV16ItoM((unsigned int)&REG_X, 0);
+#endif
+				}
+			}
+			else
+			{
+				if(CONST_PROP && GPRStatus.GPRIsConst[Op_Y] == true)
+				{
+						RefChip16Emitter->MOV16ItoR(ECX, GPRStatus.GPRConstVal[Op_Y]);
+				}
+				else MoveLiveRegister(Op_Y, ECX);
+
+				if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
+				{
+					ClearLiveRegister(0xffff, true);
+					RefChip16Emitter->MOV16ItoR(EAX, GPRStatus.GPRConstVal[Op_X]);
+					SetLiveRegister(Op_X);
+				}
+				else CheckLiveRegister(Op_X, false);
+
+				RefChip16Emitter->DIV16RtoEAX(ECX);	
+
+				RefChip16Emitter->MOV16RtoR(EAX, EDX);
+				GPRStatus.GPRIsConst[Op_X] = false;
+				SetLiveRegister(Op_X);
+				recTestLogic();
+			}			
+		}
+		break;
+	//Z = X % Y [z,n]
+	case 0x8:
+		if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true && GPRStatus.GPRIsConst[Op_Y] == true)
+		{
+			int flags = 0;
+
+			GPRStatus.GPRConstVal[Op_Z] = (short)GPRStatus.GPRConstVal[Op_X] % (short)GPRStatus.GPRConstVal[Op_Y];
+
+			if(GPRStatus.GPRConstVal[Op_Z] == 0) flags |= 0x4;
+			else if(GPRStatus.GPRConstVal[Op_Z] & 0x8000) flags |= 0x80;
+
+			RefChip16Emitter->OR16ItoM((unsigned int)&Flag._u16, flags);
+			GPRStatus.GPRIsConst[Op_Z] = true;
+		}
+		else
+		{
+			if(Op_X == Op_Y) 
+			{
+				if(CONST_PROP)
+				{
+					GPRStatus.GPRIsConst[Op_Z] = true;
+					GPRStatus.GPRConstVal[Op_Z] = 0;						
+					ClearLiveRegister(Op_Z, false);
+				}
+				else
+				{
+#ifdef REG_CACHING
+					ClearLiveRegister(0xffff, (Op_X == GPRStatus.LiveGPRReg) ? false : true);
+					RefChip16Emitter->MOV16ItoR(EAX, 0);
+					SetLiveRegister(Op_Z);
+#else
+					RefChip16Emitter->MOV16ItoM((unsigned int)&REG_Z, 0);
+#endif
+				}
+			}
+			else
+			{
+				if(CONST_PROP && GPRStatus.GPRIsConst[Op_Y] == true)
+				{
+					RefChip16Emitter->MOV16ItoR(ECX, GPRStatus.GPRConstVal[Op_Y]);
+				}
+				else MoveLiveRegister(Op_Y, ECX);
+
+				if(CONST_PROP && GPRStatus.GPRIsConst[Op_X] == true)
+				{
+					ClearLiveRegister(0xffff, (GPRStatus.LiveGPRReg == Op_Z) ? false : true);
+					RefChip16Emitter->MOV16ItoR(EAX, GPRStatus.GPRConstVal[Op_X]);
+					
+				}
+				else CheckLiveRegister(Op_X, (Op_X == Op_Z) ? false : true);
+
+				RefChip16Emitter->DIV16RtoEAX(ECX);
+				RefChip16Emitter->MOV16RtoR(EAX, EDX);
 
 				GPRStatus.GPRIsConst[Op_Z] = false;
 				SetLiveRegister(Op_Z);
