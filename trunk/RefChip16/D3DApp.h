@@ -29,7 +29,7 @@ extern int SCREEN_WIDTH;
 extern int SCREEN_HEIGHT;
 
 extern char MenuVSync;
-
+extern char Smoothing;
 struct Sprite
 {
 	int Width;

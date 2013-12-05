@@ -50,7 +50,7 @@ __int64 vsyncstart, vsyncend;
 unsigned char framenumber;
 int fps2 = 0;
 char headingstr [128];
-char inisettings[4];
+char inisettings[5];
 char MenuScale = 1;
 char LoggingEnable = 0;
 int prev_v_cycle = 0;
@@ -84,11 +84,12 @@ int SaveIni(){
 		inisettings[1] = MenuVSync;
 		inisettings[2] = MenuScale;
 		inisettings[3] = LoggingEnable;
+		inisettings[4] = Smoothing;
 		
 		rewind (iniFile);
 		
 		CPU_LOG("Saving Ini %x and %x and %x pos %d\n", Recompiler, MenuVSync, MenuScale, ftell(iniFile));
-		fwrite(&inisettings,1,4,iniFile); //Read in the file
+		fwrite(&inisettings,1,5,iniFile); //Read in the file
 		CPU_LOG("pos %d\n", Recompiler, MenuVSync, MenuScale, ftell(iniFile));
 		fclose(iniFile); //Close the file
 
@@ -115,7 +116,7 @@ int LoadIni(){
 	if (iniFile!=NULL)  //If the file exists
 	{
 		
-		fread (&inisettings,1,4,iniFile); //Read in the file
+		fread (&inisettings,1,5,iniFile); //Read in the file
 		//fclose (iniFile); //Close the file
 		if(ftell (iniFile) > 0) // Identify if the inifile has just been created
 		{
@@ -123,6 +124,8 @@ int LoadIni(){
 			MenuVSync = inisettings[1];
 			MenuScale = inisettings[2];
 			LoggingEnable = inisettings[3];
+			Smoothing = inisettings[4];
+
 			switch(MenuScale)
 			{
 			case 1:
@@ -145,6 +148,7 @@ int LoadIni(){
 			Recompiler = 1;
 			MenuVSync = 1;
 			MenuScale = 1;
+			Smoothing = 0;
 			LoggingEnable = 0;
 			SCREEN_WIDTH = 320;
 			SCREEN_HEIGHT = 240;
@@ -167,7 +171,7 @@ int LoadIni(){
 
 void UpdateTitleBar(HWND hWnd)
 {
-	sprintf_s(headingstr, "RefChip16 V1.6 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
+	sprintf_s(headingstr, "RefChip16 V1.61 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
 	SetWindowText(hWnd, headingstr);
 }
 // The entry point for any Windows program
@@ -329,6 +333,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #define     ID_WINDOWX2    1008
 #define     ID_WINDOWX3    1009
 #define     ID_LOGGING	   1010
+#define     ID_SMOOTHING   1011
+
+void ToggleSmoothing(HWND hWnd)
+{
+	HMENU hmenuBar = GetMenu(hWnd); 
+	MENUITEMINFO mii; 
+
+	memset( &mii, 0, sizeof( MENUITEMINFO ) );
+	mii.cbSize = sizeof(MENUITEMINFO);
+	mii.fMask = MIIM_STATE;    // information to get 
+	//Grab filtering state
+	GetMenuItemInfo(hSubMenu2, ID_SMOOTHING, FALSE, &mii);
+	// Toggle the checked state. 
+	Smoothing = !Smoothing;
+	mii.fState ^= MFS_CHECKED; 
+	// Write the new state to the smoothing flag.
+	SetMenuItemInfo(hSubMenu2, ID_SMOOTHING, FALSE, &mii); 
+
+}
 
 void ToggleRecompilerState(HWND hWnd)
 {
@@ -450,6 +473,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		  
 		  AppendMenu(hSubMenu2, MF_STRING| (Recompiler == 0 ? MF_CHECKED : 0), ID_INTERPRETER, "Enable &Interpreter");
 		  AppendMenu(hSubMenu2, MF_STRING| (Recompiler == 1 ? MF_CHECKED : 0), ID_RECOMPILER, "Enable &Recompiler");
+		  AppendMenu(hSubMenu2, MF_STRING| (Smoothing == 1 ? MF_CHECKED : 0), ID_SMOOTHING, "Graphics &Filtering");
 		  AppendMenu(hSubMenu2, MF_STRING| (MenuVSync == 1 ? MF_CHECKED : 0), ID_VSYNC, "&Vertical Sync");
 		  AppendMenu(hSubMenu2, MF_STRING| (MenuScale == 1 ? MF_CHECKED : 0), ID_WINDOWX1, "WindowScale 320x240 (x&1)");
 		  AppendMenu(hSubMenu2, MF_STRING| (MenuScale == 2 ? MF_CHECKED : 0), ID_WINDOWX2, "WindowScale 640x480 (x&2)");
@@ -480,11 +504,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			EndPaint(hWnd, &ps);
 			}
 		break;
-		case WM_COMMAND :
+		case WM_COMMAND:
 			
 		  switch(LOWORD(wParam))
 		  {
-		  case ID_OPEN :
+		  case ID_OPEN:
 			ZeroMemory( &ofn , sizeof( ofn ));
 			ofn.lStructSize = sizeof ( ofn );
 			ofn.hwndOwner = NULL ;
@@ -533,7 +557,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				 }
 			 }
 			 break;
-		  case ID_INTERPRETER :
+		  case ID_INTERPRETER:
 			if(Recompiler == 1)
 			{			
 				ToggleRecompilerState(hWnd);
@@ -541,7 +565,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				UpdateTitleBar(hWnd); //Set the title stuffs
 			 }
 			 break;
-		  case ID_RECOMPILER :
+		  case ID_RECOMPILER:
 			 
 			 if(Recompiler == 0)
 			 {
@@ -550,9 +574,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				 UpdateTitleBar(hWnd); //Set the title stuffs
 			 }
 			 break;
-		  case ID_VSYNC :
+		  case ID_VSYNC:
 			  ToggleVSync(hWnd);
 			 break;
+		  case ID_SMOOTHING:
+			  ToggleSmoothing(hWnd);
+			  break;
 		  case ID_WINDOWX1:
 			  ChangeScale(hWnd, ID_WINDOWX1);
 			  break;
@@ -565,10 +592,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		  case ID_LOGGING:
 			  ToggleLogging(hWnd);
 			  break;
-		  case ID_ABOUT :
-				 MessageBox(hWnd, "RefChip16 V1.6 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
+		  case ID_ABOUT:
+				 MessageBox(hWnd, "RefChip16 V1.61 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
-		  case ID_EXIT :
+		  case ID_EXIT:
 			 DestroyWindow(hWnd);
 			 return 0;
 			 break;

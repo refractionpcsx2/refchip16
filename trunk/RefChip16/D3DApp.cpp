@@ -26,7 +26,7 @@ using namespace CPU;
 SDL_Surface*    SDL_Display;
 
 char MenuVSync = 1;
-
+char Smoothing = 0;
 extern HWND hwndSDL;
 unsigned char ScreenBuffer[320][240];
 Sprite SpriteSet;
@@ -250,6 +250,38 @@ void RedrawLastScreen()
 			{
 				SDL_Rect rect = {j*scale,i*scale,scale,scale};
 				SDL_FillRect(SDL_Display, &rect, pixelcolours[ScreenBuffer[j][i]]);
+				
+				//Time for some dodgy filtering!
+				if(Smoothing == 1 && ScreenBuffer[j][i] > 1)
+				{
+					if(ScreenBuffer[j-1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i-1] == ScreenBuffer[j][i])
+					{
+						SDL_Rect trect = {(j-1)*scale+(scale-1),(i-1)*scale+(scale-1),scale-1,scale-1};
+						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);
+					}
+					
+					
+					if(ScreenBuffer[j-1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i+1] == ScreenBuffer[j][i])
+					{
+						SDL_Rect trect = {(j-1)*scale+(scale-1),(i+1)*scale,scale-1,scale-1};
+						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);
+					}
+					
+					
+					
+					if(ScreenBuffer[j][i-1] == ScreenBuffer[j][i] && ScreenBuffer[j+1][i] == ScreenBuffer[j][i])
+					{
+						SDL_Rect trect = {(j+1)*scale,(i-1)*scale+(scale-1),scale-1,scale-1};
+						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);
+					}
+					
+
+					if(ScreenBuffer[j+1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i+1] == ScreenBuffer[j][i])
+					{
+						SDL_Rect trect = {(j+1)*scale,(i+1)*scale,scale-1,scale-1};
+						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);		
+					}
+				}
 			}
 		}				
 	}
