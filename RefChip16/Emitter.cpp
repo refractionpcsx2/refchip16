@@ -267,7 +267,14 @@ void Emitter::MUL16RtoEAX( X86RegisterType src )
 	ModRM(3, 4, src);
 }
 
-/*DIVs - Make sure EDX is cleared!!*/
+/*DIVs - EDX is sign extension!!*/
+void Emitter::CDQ16()
+{
+	RefChip16RecCPU->AddBlockInstruction();
+	*(unsigned char*)x86Ptr++ = 0x66; //Prefix not needed for native 32bit (0x66 for 16bit)
+	*(unsigned char*)x86Ptr++ = 0x99;
+}
+
 void Emitter::DIV16MtoEAX(unsigned int src ) 
 {
 	RefChip16RecCPU->AddBlockInstruction();
@@ -284,6 +291,14 @@ void Emitter::DIV16RtoEAX( X86RegisterType src )
 	*(unsigned char*)x86Ptr++ = 0x66; //Prefix not needed for native 32bit (0x66 for 16bit)
 	*(unsigned char*)x86Ptr++ = 0xF7; //The MOV to Mem from Reg opcode
 	ModRM(3, 6, src);
+}
+
+void Emitter::IDIV16RtoEAX(X86RegisterType src)
+{
+	RefChip16RecCPU->AddBlockInstruction();
+	*(unsigned char*)x86Ptr++ = 0x66; //Prefix not needed for native 32bit (0x66 for 16bit)
+	*(unsigned char*)x86Ptr++ = 0xF7; //The MOV to Mem from Reg opcode
+	ModRM(3, 7, src);
 }
 
 void Emitter::AND16ItoR( X86RegisterType dest, int imm)

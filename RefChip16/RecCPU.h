@@ -34,11 +34,17 @@ class RecCPU
 		unsigned char* RecompileBlock(); //Function which handles generation of the recompiled code
 		unsigned char* __fastcall ExecuteBlock(); //This function returns the codebuffer pointer for start of rec code.
 		void FlushConstRegisters(bool flush);
-		void CheckLiveRegister(unsigned char GPRReg, bool writeback);
-		void FlushLiveRegister();
-		void ClearLiveRegister(unsigned short GPRReg, bool flush);
-		void SetLiveRegister(unsigned char GPRReg);
-		void MoveLiveRegister(unsigned short GPRReg, X86RegisterType to);
+		void IncRegisterAge();
+		void FlushLiveRegisters(bool flush);
+		void ToggleLockRegister(int reg, bool locked);
+		void MoveLiveRegister(X86RegisterType toreg, X86RegisterType fromreg, bool swap);
+		void SetupMulDivSrcRegister(unsigned short srcReg, unsigned short tarReg, bool isSigned);
+		int GetLiveRegister(unsigned short GPRReg, bool isDestOnly);
+		int GetLiveRegisterNoAssign(unsigned short GPRReg);
+		int GetFreeLiveRegister(unsigned short GPRReg, bool isDestOnly);
+		void AssignLiveRegister(unsigned char GPRReg, int x86Reg);
+		void FlushLiveRegister(unsigned short GPRReg, bool flush);
+		void ReAssignLiveRegister(int x86RegFrom, int x86RegTo);
 		void ResetRecMem();
 
 		void recCpuCore(); 
@@ -47,11 +53,11 @@ class RecCPU
 		void recCpuStore(); 
 		void recCpuAdd(); 
 		void recADDCheckCarry();
-		void recADDCheckOVF();
+		void recADDCheckOVF(X86RegisterType yReg, X86RegisterType dReg, X86RegisterType xTemp, bool XisY);
 		void recSUBCheckCarry();
-		void recSUBCheckOVF();
+		void recSUBCheckOVF(X86RegisterType yReg, X86RegisterType dReg, X86RegisterType xTemp, bool XisY);
 		void recCpuSub();
-		void recTestLogic();
+		void recTestLogic(X86RegisterType dReg);
 		void recCpuAND(); 
 		void recCpuOR(); 
 		void recCpuXOR(); 

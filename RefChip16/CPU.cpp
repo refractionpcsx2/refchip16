@@ -747,6 +747,7 @@ void CpuDiv()
 		TempResult = (short)REG_X % (short)REG_Y;
 		if((REG_X & 0x8000) ^ (REG_Y & 0x8000)) REG_X = TempResult + (short)REG_Y;
 		else REG_X = TempResult;
+		CPU_LOG("Result is %d tempresult is %d", REG_X, TempResult);
 		LogicCMP(REG_X);
 		break;
 	// Z = X MOD Y [z,n]

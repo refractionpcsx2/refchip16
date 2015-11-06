@@ -25,8 +25,8 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
-extern int SCREEN_WIDTH;
-extern int SCREEN_HEIGHT;
+extern unsigned short SCREEN_WIDTH;
+extern unsigned short SCREEN_HEIGHT;
 
 extern char MenuVSync;
 extern char Smoothing;

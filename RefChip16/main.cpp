@@ -57,8 +57,8 @@ int prev_v_cycle = 0;
 unsigned int v_cycle = prev_v_cycle;
 time_t counter;
 
-int SCREEN_WIDTH = 320;
-int SCREEN_HEIGHT = 240;
+unsigned short SCREEN_WIDTH = 320;
+unsigned short SCREEN_HEIGHT = 240;
 RECT        rc;
 
 using namespace CPU;
@@ -76,7 +76,8 @@ void CleanupRoutine()
 
 int SaveIni(){
 	
-	//fopen_s(&iniFile, "./refchip16.ini","w+");     //Open the file, args r = read, b = binary
+	fopen_s(&iniFile, "./refchip16.ini", "w+b");     //Open the file, args r = read, b = binary
+	
 
 	if (iniFile!=NULL)  //If the file exists
 	{
@@ -88,9 +89,9 @@ int SaveIni(){
 		
 		rewind (iniFile);
 		
-		CPU_LOG("Saving Ini %x and %x and %x pos %d\n", Recompiler, MenuVSync, MenuScale, ftell(iniFile));
+		///CPU_LOG("Saving Ini %x and %x and %x pos %d\n", Recompiler, MenuVSync, MenuScale, ftell(iniFile));
 		fwrite(&inisettings,1,5,iniFile); //Read in the file
-		CPU_LOG("pos %d\n", Recompiler, MenuVSync, MenuScale, ftell(iniFile));
+		//CPU_LOG("Rec %d, Vsync %d, Scale %d, pos %d\n", Recompiler, MenuVSync, MenuScale, ftell(iniFile));
 		fclose(iniFile); //Close the file
 
 		if(LoggingEnable)
@@ -157,13 +158,13 @@ int LoadIni(){
 		
 		CPU_LOG("Loading Ini %x and %x and %x\n", Recompiler, MenuVSync, MenuScale);
 		fclose(iniFile); //Close the file
-		fopen_s(&iniFile, "./refchip16.ini","wb+");     //Open the file, args r+ = read, b = binary
+		//fopen_s(&iniFile, "./refchip16.ini","wb+");     //Open the file, args r+ = read, b = binary
 		return 0;
 	} 
 	else
 	{
 		CPU_LOG("Error Loading Ini\n");
-		fopen_s(&iniFile, "./refchip16.ini","wb+");     //Open the file, args r+ = read, b = binary
+		fopen_s(&iniFile, "./refchip16.ini","r+b");     //Open the file, args r+ = read, b = binary
 		//User cancelled, either way, do nothing.
 		return 1;
 	}	
@@ -171,7 +172,7 @@ int LoadIni(){
 
 void UpdateTitleBar(HWND hWnd)
 {
-	sprintf_s(headingstr, "RefChip16 V1.61 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
+	sprintf_s(headingstr, "RefChip16 V1.7 FPS: %d Recompiler %s", fps2, Recompiler ? "Enabled" : "Disabled");
 	SetWindowText(hWnd, headingstr);
 }
 // The entry point for any Windows program
@@ -593,9 +594,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			  ToggleLogging(hWnd);
 			  break;
 		  case ID_ABOUT:
-				 MessageBox(hWnd, "RefChip16 V1.61 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
+				 MessageBox(hWnd, "RefChip16 V1.7 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
 		  case ID_EXIT:
+			  SaveIni();
 			 DestroyWindow(hWnd);
 			 return 0;
 			 break;

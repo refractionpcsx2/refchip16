@@ -235,16 +235,16 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 void RedrawLastScreen()
 {
 	//FPS_LOG("Starting redraw");
-	int scale = 1; //Used for when the screen is bigger :P
+	unsigned short scale = 1; //Used for when the screen is bigger :P
 
 	scale = SCREEN_WIDTH / 320;
 	SDL_Rect rect = {0,0,SCREEN_WIDTH,SCREEN_HEIGHT};
 	SDL_FillRect(SDL_Display, &rect, pixelcolours[SpriteSet.BackgroundColour]);
-	
+	unsigned short u_Scale = (unsigned short)(scale - 1);
 	//This used to be slow, but since changing to shaders, it seems quicker again, guess ive just gotta make sure i dont thrash it.
-	for(int i = 0; i < 240; i++){
+	for(unsigned short i = 0; i < 240; i++){
 		
-		for(int j = 0; j < 320; j++){	
+		for(unsigned short j = 0; j < 320; j++){	
 		
 			if(ScreenBuffer[j][i] != 0)
 			{
@@ -256,14 +256,15 @@ void RedrawLastScreen()
 				{
 					if(ScreenBuffer[j-1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i-1] == ScreenBuffer[j][i])
 					{
-						SDL_Rect trect = {(j-1)*scale+(scale-1),(i-1)*scale+(scale-1),scale-1,scale-1};
+						
+						SDL_Rect trect = {(j-1)*scale+ u_Scale,(i-1)*scale+u_Scale,u_Scale,u_Scale };
 						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);
 					}
 					
 					
 					if(ScreenBuffer[j-1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i+1] == ScreenBuffer[j][i])
 					{
-						SDL_Rect trect = {(j-1)*scale+(scale-1),(i+1)*scale,scale-1,scale-1};
+						SDL_Rect trect = {(j-1)*scale+u_Scale,(i+1)*scale,u_Scale,u_Scale };
 						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);
 					}
 					
@@ -271,14 +272,14 @@ void RedrawLastScreen()
 					
 					if(ScreenBuffer[j][i-1] == ScreenBuffer[j][i] && ScreenBuffer[j+1][i] == ScreenBuffer[j][i])
 					{
-						SDL_Rect trect = {(j+1)*scale,(i-1)*scale+(scale-1),scale-1,scale-1};
+						SDL_Rect trect = {(j+1)*scale,(i-1)*scale+ u_Scale,u_Scale,u_Scale };
 						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);
 					}
 					
 
 					if(ScreenBuffer[j+1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i+1] == ScreenBuffer[j][i])
 					{
-						SDL_Rect trect = {(j+1)*scale,(i+1)*scale,scale-1,scale-1};
+						SDL_Rect trect = {(j+1)*scale,(i+1)*scale,u_Scale,u_Scale };
 						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);		
 					}
 				}

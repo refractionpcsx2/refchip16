@@ -61,8 +61,10 @@ class Emitter
 		void SUB32ItoM(unsigned int dest, int imm);
 		void MUL16MtoEAX(unsigned int src );
 		void MUL16RtoEAX( X86RegisterType src );
+		void CDQ16();
 		void DIV16MtoEAX(unsigned int src );
 		void DIV16RtoEAX( X86RegisterType src );
+		void IDIV16RtoEAX(X86RegisterType src);
 		void AND16ItoM(unsigned int dest, int imm);
 		void AND16ItoR( X86RegisterType dest, int imm);
 		void AND32ItoR( X86RegisterType dest, int imm);
