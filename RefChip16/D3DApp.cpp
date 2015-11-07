@@ -24,7 +24,9 @@ using namespace CPU;
 //extern CPU *RefChip16CPU;
 
 SDL_Surface*    SDL_Display;
-
+SDL_Renderer*	renderer = NULL;
+SDL_Texture *texture = NULL;
+SDL_Window *screen = NULL;
 char MenuVSync = 1;
 char Smoothing = 0;
 extern HWND hwndSDL;
@@ -78,24 +80,45 @@ void D3DReset()
 
 }
 extern int prev_v_cycle;
+
+void DestroyDisplay() {
+	SDL_DestroyTexture(texture);
+	SDL_FreeSurface(SDL_Display);
+	SDL_DestroyRenderer(renderer);
+}
 void InitDisplay(int width, int height, HWND hWnd)
 {
+	int flags;
 	if(SDL_Init(SDL_INIT_VIDEO) < 0) 
 	{
        MessageBox(hWnd, "Failed to INIT SDL", "Error", MB_OK);
 	}
 
-	if((SDL_Display = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_NOFRAME)) == NULL) {
+	/*if((SDL_Display = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_NOFRAME)) == NULL) {
        MessageBox(hWnd, "Failed to Create SDL Surface", "Error", MB_OK);
-    }
+    }*/
+	screen = SDL_CreateWindow("SDL Window",
+		SDL_WINDOWPOS_UNDEFINED,
+		SDL_WINDOWPOS_UNDEFINED,
+		width, height,
+		SDL_WINDOW_MAXIMIZED | SDL_WINDOW_BORDERLESS | SDL_WINDOW_OPENGL);
 	
 	struct SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);
 
-	if(-1 == SDL_GetWMInfo(&wmInfo))
+	if(-1 == SDL_GetWindowWMInfo(screen, &wmInfo))
 		 MessageBox(hWnd, "Failed to get WMInfo SDL", "Error", MB_OK);
 
-	hwndSDL = wmInfo.window;
+	hwndSDL = wmInfo.info.win.window;
+	flags = SDL_RENDERER_ACCELERATED;
+	if (MenuVSync)
+	{
+		flags |= SDL_RENDERER_PRESENTVSYNC;
+	}
+
+	renderer = SDL_CreateRenderer(screen, -1, flags);
+	SDL_Display = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
+	
 	SetParent(hwndSDL, hWnd);
 	SetWindowPos(hwndSDL, HWND_TOP , 0, 0, width, height, NULL);
 	prev_v_cycle = SDL_GetTicks();
@@ -242,13 +265,14 @@ void RedrawLastScreen()
 	SDL_FillRect(SDL_Display, &rect, pixelcolours[SpriteSet.BackgroundColour]);
 	unsigned short u_Scale = (unsigned short)(scale - 1);
 	//This used to be slow, but since changing to shaders, it seems quicker again, guess ive just gotta make sure i dont thrash it.
+	//SDL_Rect rect;
 	for(unsigned short i = 0; i < 240; i++){
 		
 		for(unsigned short j = 0; j < 320; j++){	
 		
 			if(ScreenBuffer[j][i] != 0)
 			{
-				SDL_Rect rect = {j*scale,i*scale,scale,scale};
+				rect = {j*scale,i*scale,scale,scale};
 				SDL_FillRect(SDL_Display, &rect, pixelcolours[ScreenBuffer[j][i]]);
 				
 				//Time for some dodgy filtering!
@@ -286,6 +310,7 @@ void RedrawLastScreen()
 			}
 		}				
 	}
+	texture = SDL_CreateTextureFromSurface(renderer, SDL_Display);
 	//FPS_LOG("End redraw");
 }
 
@@ -295,12 +320,22 @@ void EndDrawing()
 
 	drawing = false;
 		
-	if( SDL_MUSTLOCK( SDL_Display ) ) { SDL_UnlockSurface( SDL_Display ); }
-	SDL_Flip( SDL_Display );
+	if( SDL_MUSTLOCK( SDL_Display ) ) { 
+		SDL_UnlockSurface(SDL_Display);
+	}
+	//SDL_RenderClear(renderer);
+	
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	//SDL_UpdateWindowSurface(screen);
+	SDL_RenderPresent(renderer);
+	SDL_DestroyTexture(texture);
 }
 
 void StartDrawing()
 {
 	//CPU_LOG("Start Scene");
-	if( SDL_MUSTLOCK( SDL_Display ) ) { SDL_LockSurface( SDL_Display ); }
+	if( SDL_MUSTLOCK( SDL_Display ) ) 
+	{ 
+		SDL_LockSurface( SDL_Display ); 
+	}
 }

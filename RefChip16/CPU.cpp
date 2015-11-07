@@ -55,7 +55,7 @@ unsigned long OpCode;
 unsigned short VBlank;
 FlagRegister Flag;
 unsigned int cycles=0;
-unsigned int nextvsync=0;
+unsigned int nextsecond=0;
 unsigned int fps=0;
 unsigned short lastrandom = 0x1234;
 bool Running = false;
@@ -95,7 +95,7 @@ unsigned short __fastcall SkipToVBlank()
 {
 	if(!VBlank) //Skip until need vblank..
 	{
-		cycles = nextvsync + ((1000000/60) * fps);
+		cycles = nextsecond + (int)(1000000.0f / 60.0f * fps);
 	}
 	return 0;
 }
@@ -198,7 +198,7 @@ void CpuCore()
 	case 0x2: //Wait for VBLANK
 		if(!VBlank) //Skip until need vblank..
 		{
-			cycles = nextvsync + ((1000000/60) * fps);
+			cycles = nextsecond + (int)(1000000.0f / 60.0f * fps);
 		}
 		break;
 	case 0x3: //Background Colour
@@ -968,7 +968,7 @@ void Reset()
 	PC = 0;
 	StackPTR = 0xFDF0;
 	cycles = 0;
-	nextvsync = 0;
+	nextsecond = 0;
 	srand ( (int)time(NULL) );
 
 	for(int i = 0; i < 16; i++) 

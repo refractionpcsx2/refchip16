@@ -81,7 +81,7 @@ class CPU
 		extern unsigned short VBlank;
 		extern FlagRegister Flag;
 		extern unsigned int cycles;
-		extern unsigned int nextvsync;
+		extern unsigned int nextsecond;
 		extern unsigned int fps;
 		extern bool Running;
 		extern char Recompiler;

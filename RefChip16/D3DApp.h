@@ -39,7 +39,7 @@ struct Sprite
 	int BackgroundColour;
 };
 
-
+void DestroyDisplay();
 void InitDisplay(int width, int height, HWND hWnd);
 void DrawSprite(unsigned short MemAddr, int X, int Y);
 void EndDrawing();

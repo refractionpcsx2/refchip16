@@ -210,7 +210,7 @@ unsigned char* RecCPU::RecompileBlock()
 				break;
 		}
 		IncRegisterAge();
-		if(cycles + PCIndex[recPC].BlockCycles >= (nextvsync + ((1000000/60) * fps))) break;
+		if(cycles + PCIndex[recPC].BlockCycles >= (nextsecond + (1000000.0f / 60.0f * fps))) break;
 	}
 	PCIndex[recPC].EndPC = PC;
 	//ClearLiveRegister(0xffff, true);
@@ -658,7 +658,7 @@ void RecCPU::recCpuCore()
 			//If we emulate it as a loop properly, this will cause a lot of Rec overhead!
 			FlushLiveRegisters(true);
 			RefChip16Emitter->CALL16((int)SkipToVBlank);
-			RefChip16Emitter->MOV32ItoM((unsigned int)&PC, PC);
+			//RefChip16Emitter->MOV32ItoM((unsigned int)&PC, PC);
 			cpubranch = 3;
 		break;
 	case 0x3: //Background Colour
@@ -780,6 +780,8 @@ void RecCPU::recCpuLoad()
 		}
 		else
 		{
+			if (Op_X == Op_Y) return;
+
 			int yReg = GetLiveRegister(Op_Y);
 			if(Op_Y != Op_X)
 				FlushLiveRegister(Op_X, true);

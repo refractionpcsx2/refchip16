@@ -250,7 +250,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				if(Running == true)
 				{
 
-					if(cycles >= (nextvsync + ((1000000/60) * fps))) //We have a VBlank!
+					if(cycles >= (nextsecond + (1000000.0f/60.0f * fps))) //We have a VBlank!
 					{
 						
 						VBlank = 1;
@@ -266,7 +266,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 						RedrawLastScreen();
 
 						
-						if(MenuVSync == 1)
+						/*if(MenuVSync == 1)
 						{
 							unsigned int value = prev_v_cycle+(int)((float)(1000.0f / 60.0f) * fps);
 
@@ -278,10 +278,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 							{						
 								prev_v_cycle += 1000;
 								fps = 0;	
-								nextvsync += 1000000;
+								nextsecond += 1000000;
 							}	
+						}*/
+						if ((int)(cycles - nextsecond) < 0)
+						{
+							nextsecond += 1000000;
+							fps = 0;
 						}
-						
 							EndDrawing();
 					}
 					else
@@ -295,11 +299,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 							UpdateWindow(hWnd);
 							counter = time(NULL);
 							fps2 = 0;
-							if(!MenuVSync)
+							/*if(!MenuVSync)
 							{
-								nextvsync += (int)((float)(1000000.0f / 60.0f) * fps);
+								//nextsecond += (int)((float)(1000000.0f / 60.0f) * fps);
 								fps = 0;								
-							}
+							}*/
 						}
 
 					if(Recompiler == 1)
@@ -315,7 +319,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 						
 					}
 				}	
-				else Sleep(100);
+				else Sleep(10);
 		
 	
 	}
@@ -412,8 +416,11 @@ void ChangeScale(HWND hWnd, int ID)
 
 	SetWindowPos(hWnd,0,100,100,wr.right - wr.left,wr.bottom - wr.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
 	
-	if(Running == true) 
+	if (Running == true)
+	{
+		DestroyDisplay();
 		InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);
+	}
 }
 
 void ToggleVSync(HWND hWnd)
@@ -431,6 +438,12 @@ void ToggleVSync(HWND hWnd)
 	mii.fState ^= MFS_CHECKED; 
 	// Write the new state to the VSync flag.
 	SetMenuItemInfo(hSubMenu2, ID_VSYNC, FALSE, &mii); 
+
+	if (Running == true)
+	{
+		DestroyDisplay();
+		InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);
+	}
 }
 
 void ToggleLogging(HWND hWnd)
@@ -597,7 +610,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				 MessageBox(hWnd, "RefChip16 V1.7 Written by Refraction - Big thanks to the Chip16 devs for this :)", "RefChip16", 0);			 
 			 break;
 		  case ID_EXIT:
-			  SaveIni();
+			  DestroyDisplay();
 			 DestroyWindow(hWnd);
 			 return 0;
 			 break;
@@ -608,6 +621,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			{		
 				case VK_ESCAPE:
 				{
+					DestroyDisplay();
 					DestroyWindow(hWnd);
 					return 0;
 				}
