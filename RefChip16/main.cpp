@@ -183,9 +183,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	
 	LPSTR RomName;
 	
-
-	//_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-
 	ZeroMemory(&wc, sizeof(WNDCLASSEX));
 
 	wc.cbSize = sizeof(WNDCLASSEX);
@@ -231,6 +228,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			RefChip16RecCPU->ResetRecMem();
 			Running = true;
 			InitDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, hWnd);
+			nextsecond = 0;
+			fps = 0;
+			cycles = 0;
 		}		
 	}
 
@@ -250,43 +250,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				if(Running == true)
 				{
 
-					if(cycles >= (nextsecond + (1000000.0f/60.0f * fps))) //We have a VBlank!
+					if (cycles >= (nextsecond + ((1000000.0f / 60.0f) * fps))) //We have a VBlank!
 					{
-						
+
 						VBlank = 1;
-						
+
 						//Ignore controls if the user isnt pointing at this window
-						if(GetActiveWindow() == hWnd || GetActiveWindow() == hwndSDL) 
+						if (GetActiveWindow() == hWnd || GetActiveWindow() == hwndSDL)
 							RefChip16Input->UpdateControls();
 
-						fps++; 
+						fps++;
 						fps2++;
 
 						StartDrawing();
 						RedrawLastScreen();
 
-						
-						/*if(MenuVSync == 1)
-						{
-							unsigned int value = prev_v_cycle+(int)((float)(1000.0f / 60.0f) * fps);
+						nextsecond += 1000000;
 
-							v_cycle = SDL_GetTicks();
-
-							while (v_cycle < value) { v_cycle = SDL_GetTicks(); }
-
-							if(fps == 60)
-							{						
-								prev_v_cycle += 1000;
-								fps = 0;	
-								nextsecond += 1000000;
-							}	
-						}*/
-						if ((int)(cycles - nextsecond) < 0)
-						{
-							nextsecond += 1000000;
-							fps = 0;
+						//Prevent variable overflow
+						if (nextsecond > 10000000) {
+							cycles -= 10000000;
+							nextsecond -= 10000000;
 						}
-							EndDrawing();
+						fps = 0;
+						EndDrawing();
 					}
 					else
 					{
@@ -299,11 +286,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 							UpdateWindow(hWnd);
 							counter = time(NULL);
 							fps2 = 0;
-							/*if(!MenuVSync)
-							{
-								//nextsecond += (int)((float)(1000000.0f / 60.0f) * fps);
-								fps = 0;								
-							}*/
 						}
 
 					if(Recompiler == 1)
@@ -319,7 +301,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 						
 					}
 				}	
-				else Sleep(10);
+				else Sleep(100);
 		
 	
 	}

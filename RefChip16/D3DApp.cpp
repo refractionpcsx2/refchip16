@@ -20,8 +20,6 @@
 #include "CPU.h"
 #include "D3DApp.h"
 using namespace CPU;
-//extern InputDevice *RefChip16Input;
-//extern CPU *RefChip16CPU;
 
 SDL_Surface*    SDL_Display;
 SDL_Renderer*	renderer = NULL;
@@ -94,9 +92,6 @@ void InitDisplay(int width, int height, HWND hWnd)
        MessageBox(hWnd, "Failed to INIT SDL", "Error", MB_OK);
 	}
 
-	/*if((SDL_Display = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_NOFRAME)) == NULL) {
-       MessageBox(hWnd, "Failed to Create SDL Surface", "Error", MB_OK);
-    }*/
 	screen = SDL_CreateWindow("SDL Window",
 		SDL_WINDOWPOS_UNDEFINED,
 		SDL_WINDOWPOS_UNDEFINED,
@@ -140,7 +135,6 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 	//__int64 count1, count2;
 	unsigned char curpixel;
 
-	//QueryPerformanceCounter((LARGE_INTEGER *)&count1);
 	//CPU_LOG("Draw MemAddr %x, X %d Y %d", MemAddr, X, Y);
 	//This draws the Sprite located at MemAddr on the screen, top left corner Y x X, for the size of the sprite in SpriteSet.
 	if(SpriteSet.HorizontalFlip)
@@ -250,7 +244,6 @@ void DrawSprite(unsigned short MemAddr, int X, int Y)
 		MemAddr += EndMemSkip;
 		i += yinc;
 	}
-	//QueryPerformanceCounter((LARGE_INTEGER *)&count2);
 	//FPS_LOG("Cycles to render %d x %d Sprite %d\n", SpriteSet.Height, SpriteSet.Width, count2 - count1);
 }
 
@@ -264,8 +257,7 @@ void RedrawLastScreen()
 	SDL_Rect rect = {0,0,SCREEN_WIDTH,SCREEN_HEIGHT};
 	SDL_FillRect(SDL_Display, &rect, pixelcolours[SpriteSet.BackgroundColour]);
 	unsigned short u_Scale = (unsigned short)(scale - 1);
-	//This used to be slow, but since changing to shaders, it seems quicker again, guess ive just gotta make sure i dont thrash it.
-	//SDL_Rect rect;
+
 	for(unsigned short i = 0; i < 240; i++){
 		
 		for(unsigned short j = 0; j < 320; j++){	
@@ -323,10 +315,9 @@ void EndDrawing()
 	if( SDL_MUSTLOCK( SDL_Display ) ) { 
 		SDL_UnlockSurface(SDL_Display);
 	}
-	//SDL_RenderClear(renderer);
-	
+
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
-	//SDL_UpdateWindowSurface(screen);
+
 	SDL_RenderPresent(renderer);
 	SDL_DestroyTexture(texture);
 }
