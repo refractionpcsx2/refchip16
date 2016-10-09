@@ -69,7 +69,7 @@ void D3DReset()
 	memset(ScreenBuffer, 0, sizeof(ScreenBuffer)); 
 
 	// Need to reset colours in case the palate has been changed.
-	pixelcolours[0] = 0x00000000; 	pixelcolours[1] = 0xFF000000;	pixelcolours[2] = 0xFF888888;	pixelcolours[3] = 0xFFBF3932;	pixelcolours[4] = 0xFFDE7AAE;
+	pixelcolours[0] = 0xFF000000; 	pixelcolours[1] = 0xFF000000;	pixelcolours[2] = 0xFF888888;	pixelcolours[3] = 0xFFBF3932;	pixelcolours[4] = 0xFFDE7AAE;
 	pixelcolours[5] = 0xFF4C3D21;	pixelcolours[6] = 0xFF905F25;	pixelcolours[7] = 0xFFE49452;	pixelcolours[8] =  0xFFEAD979;	pixelcolours[9] = 0xFF537A3B;
 	pixelcolours[10] = 0xFFABD54A;	pixelcolours[11] = 0xFF252E38;	pixelcolours[12] =  0xFF00467F;	pixelcolours[13] = 0xFF68ABCC;	pixelcolours[14] =  0xFFBCDEE4;
 	pixelcolours[15] =  0xFFFFFFFF;
@@ -112,7 +112,9 @@ void InitDisplay(int width, int height, HWND hWnd)
 	}
 
 	renderer = SDL_CreateRenderer(screen, -1, flags);
-	SDL_Display = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
+	
+
+	SDL_Display = SDL_CreateRGBSurface(0, width, height, 32, 0xff0000, 0xff00, 0xff, 0xff000000);
 	
 	SetParent(hwndSDL, hWnd);
 	SetWindowPos(hwndSDL, HWND_TOP , 0, 0, width, height, NULL);
@@ -270,33 +272,85 @@ void RedrawLastScreen()
 				//Time for some dodgy filtering!
 				if(Smoothing == 1 && ScreenBuffer[j][i] > 1)
 				{
-					if(ScreenBuffer[j-1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i-1] == ScreenBuffer[j][i])
+					int alpha = 0x5a000000;
+					//upper left
+					if(ScreenBuffer[j-1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i-1] == ScreenBuffer[j][i]/* && ScreenBuffer[j - 1][i - 1] == SpriteSet.BackgroundColour*/)
+					{						
+						if (ScreenBuffer[j - 1][i - 1] == SpriteSet.BackgroundColour) {
+							alpha = 0x5a000000;
+						}
+						else {
+							alpha = 0;
+						}
+						SDL_Rect trect = {((j-1)*scale)+u_Scale,((i-1)*scale)+ u_Scale,1,1 };
+						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]] - alpha);
+						if (u_Scale > 1) {
+							SDL_Rect trect2 = { ((j - 1)*scale) + u_Scale,((i - 1)*scale) + 1,1,1 };
+							SDL_FillRect(SDL_Display, &trect2, pixelcolours[ScreenBuffer[j][i]] - alpha);
+							SDL_Rect trect3 = { ((j - 1)*scale)+1,((i - 1)*scale) + u_Scale,1,1 };
+							SDL_FillRect(SDL_Display, &trect3, pixelcolours[ScreenBuffer[j][i]] - alpha);
+						}
+					}
+					
+					//lower left
+					if(ScreenBuffer[j-1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i+1] == ScreenBuffer[j][i]/* && ScreenBuffer[j - 1][i + 1] == SpriteSet.BackgroundColour*/)
 					{
-						
-						SDL_Rect trect = {(j-1)*scale+ u_Scale,(i-1)*scale+u_Scale,u_Scale,u_Scale };
-						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);
+						if (ScreenBuffer[j - 1][i + 1] == SpriteSet.BackgroundColour) {
+							alpha = 0x5a000000;
+						}
+						else {
+							alpha = 0;
+						}
+						SDL_Rect trect = {((j-1)*scale)+u_Scale,((i+1)*scale),1,1 };
+						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]] - alpha);
+						if (u_Scale > 1) {
+							SDL_Rect trect2 = { ((j - 1)*scale) + 1,((i + 1)*scale),1,1 };
+							SDL_FillRect(SDL_Display, &trect2, pixelcolours[ScreenBuffer[j][i]] - alpha);
+							SDL_Rect trect3 = { ((j - 1)*scale) + u_Scale,((i + 1)*scale)+1,1,1 };
+							SDL_FillRect(SDL_Display, &trect3, pixelcolours[ScreenBuffer[j][i]] - alpha);
+							
+						}
 					}
 					
 					
-					if(ScreenBuffer[j-1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i+1] == ScreenBuffer[j][i])
+					//upper right
+					if(ScreenBuffer[j][i-1] == ScreenBuffer[j][i] && ScreenBuffer[j+1][i] == ScreenBuffer[j][i]/* && ScreenBuffer[j+1][i-1] == SpriteSet.BackgroundColour*/)
 					{
-						SDL_Rect trect = {(j-1)*scale+u_Scale,(i+1)*scale,u_Scale,u_Scale };
-						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);
-					}
-					
-					
-					
-					if(ScreenBuffer[j][i-1] == ScreenBuffer[j][i] && ScreenBuffer[j+1][i] == ScreenBuffer[j][i])
-					{
-						SDL_Rect trect = {(j+1)*scale,(i-1)*scale+ u_Scale,u_Scale,u_Scale };
-						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);
-					}
-					
+						if (ScreenBuffer[j + 1][i - 1] == SpriteSet.BackgroundColour) {
+							alpha = 0x5a000000;
+						}
+						else {
+							alpha = 0;
+						}
+						SDL_Rect trect = {(j+1)*scale,((i-1)*scale)+u_Scale,1,1 };
+						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]] - alpha);
+						if (u_Scale > 1) {
+							SDL_Rect trect2 = { ((j + 1)*scale),((i - 1)*scale)+1,1,1 };
+							SDL_FillRect(SDL_Display, &trect2, pixelcolours[ScreenBuffer[j][i]] - alpha);
+							SDL_Rect trect3 = { ((j + 1)*scale) + 1,((i - 1)*scale) + u_Scale,1,1 };
+							SDL_FillRect(SDL_Display, &trect3, pixelcolours[ScreenBuffer[j][i]] - alpha);
 
-					if(ScreenBuffer[j+1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i+1] == ScreenBuffer[j][i])
+						}
+					}
+					
+					//lower right
+					if (ScreenBuffer[j + 1][i] == ScreenBuffer[j][i] && ScreenBuffer[j][i + 1] == ScreenBuffer[j][i]/* && ScreenBuffer[j + 1][i + 1] == SpriteSet.BackgroundColour*/)
 					{
-						SDL_Rect trect = {(j+1)*scale,(i+1)*scale,u_Scale,u_Scale };
-						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]]);		
+						if (ScreenBuffer[j + 1][i + 1] == SpriteSet.BackgroundColour) {
+							alpha = 0x5a000000;
+						}
+						else {
+							alpha = 0;
+						}
+						SDL_Rect trect = { (j + 1)*scale,(i + 1)*scale,1,1 };
+						SDL_FillRect(SDL_Display, &trect, pixelcolours[ScreenBuffer[j][i]] - alpha);
+						if (u_Scale > 1) {
+							SDL_Rect trect2 = { ((j + 1)*scale)+1,((i + 1)*scale),1,1 };
+							SDL_FillRect(SDL_Display, &trect2, pixelcolours[ScreenBuffer[j][i]] - alpha);
+							SDL_Rect trect3 = { ((j + 1)*scale),((i + 1)*scale) + 1,1,1 };
+							SDL_FillRect(SDL_Display, &trect3, pixelcolours[ScreenBuffer[j][i]] - alpha);
+
+						}
 					}
 				}
 			}
@@ -315,9 +369,9 @@ void EndDrawing()
 	if( SDL_MUSTLOCK( SDL_Display ) ) { 
 		SDL_UnlockSurface(SDL_Display);
 	}
-
+	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
-
+	
 	SDL_RenderPresent(renderer);
 	SDL_DestroyTexture(texture);
 }
