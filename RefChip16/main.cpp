@@ -45,6 +45,8 @@ HWND hwndSDL;
 
 char szFileName[MAX_PATH] = "";
 char CurFilename[MAX_PATH] = "";
+char curPath[MAX_PATH] = "";
+
 int LoadSuccess = 0;
 __int64 vsyncstart, vsyncend;
 unsigned char framenumber;
@@ -76,7 +78,7 @@ void CleanupRoutine()
 
 int SaveIni(){
 	
-	fopen_s(&iniFile, "./refchip16.ini", "w+b");     //Open the file, args r = read, b = binary
+	fopen_s(&iniFile, curPath, "w+b");     //Open the file, args r = read, b = binary
 	
 
 	if (iniFile!=NULL)  //If the file exists
@@ -112,7 +114,7 @@ int SaveIni(){
 
 int LoadIni(){
 
-	fopen_s(&iniFile, "./refchip16.ini","rb");     //Open the file, args r+ = read, b = binary
+	fopen_s(&iniFile, curPath,"rb");     //Open the file, args r+ = read, b = binary
 
 	if (iniFile!=NULL)  //If the file exists
 	{
@@ -194,7 +196,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.lpszClassName = "WindowClass";
 	
 	RegisterClassEx(&wc);
-
+	GetCurrentDirectoryA(MAX_PATH, curPath);
+	strcat_s(curPath, "/");
+	strcat_s(curPath, "RefChip16.ini");
 	LoadIni();
 	if(LoggingEnable)
 			OpenLog();

@@ -44,7 +44,7 @@ using namespace CPU;
 #define IMMEDIATE   ((short)(OpCode & 0xFFFF))
 #define CPU_LOG __Log
 #define FPS_LOG __Log2
-//#define LOGGINGENABLED
+#define LOGGINGENABLED
 
 extern int cpubranch;
 namespace CPU
@@ -112,61 +112,61 @@ unsigned short __fastcall GenerateRandom(unsigned long immediate)
 
 int Condition(int Cond)
 {
-	//CPU_LOG("Flags z=%x n=%x c=%x o=%x\n", Flag.Zero, Flag.Negative, Flag.CarryBorrow, Flag.Overflow);
+	CPU_LOG("Flags z=%x n=%x c=%x o=%x\n", Flag.Zero, Flag.Negative, Flag.CarryBorrow, Flag.Overflow);
 	switch(Cond)
 	{
 		case 0x0: case 0x1:  // [z==1] & [z==0] Equal
-			//CPU_LOG("Zero cond %x\n", (Cond+1) & 0x1);
+			CPU_LOG("Zero cond %x\n", (Cond+1) & 0x1);
 			if(Flag.Zero != (Cond & 0x1)) 
 				return 1;
 			break;
 		case 0x2: case 0x3:  // [n==1] & [n==0] Negative
-			//CPU_LOG("Negative cond %x\n", (Cond+1) & 0x1);
+			CPU_LOG("Negative cond %x\n", (Cond+1) & 0x1);
 			if(Flag.Negative != (Cond & 0x1))
 				return 1;
 			break;
 		case 0x4:			// [n==0 && z==0] Positive (Not zero or negative)
-			//CPU_LOG("Negative & Zero are 0\n");
+			CPU_LOG("Negative & Zero are 0\n");
 			if(Flag.Negative == 0 && Flag.Zero == 0) 
 				return 1;
 			break;
 		case 0x5: case 0x6: // [o==1] & [o==0] Overflow
-			//CPU_LOG("Overflow\n");
+			CPU_LOG("Overflow\n");
 			if(Flag.Overflow == (Cond & 0x1))
 				return 1;
 			break;
 		case 0x7:			// [c==0 && z==0] Above Zero (Unsigned Greater Than)	
-			//CPU_LOG("Carry and Zero 0\n");
+			CPU_LOG("Carry and Zero 0\n");
 			if(Flag.CarryBorrow == 0 && Flag.Zero == 0)
 				return 1;
 			break;
 		case 0x8: case 0x9:	// [c==0] & [c==1] Less Than Zero
-			//CPU_LOG("Carry cond %x\n", (Cond) & 0x1);
+			CPU_LOG("Carry cond %x\n", (Cond) & 0x1);
 			if(Flag.CarryBorrow == (Cond & 0x1))
 				return 1;
 			break;
 		case 0xA:			// [c==1 || z==1] Less Than or Equal to Zero
-			//CPU_LOG("Carry or Zero set\n");
+			CPU_LOG("Carry or Zero set\n");
 			if(Flag.CarryBorrow == 1 || Flag.Zero == 1)
 				return 1;
 			break;
 		case 0xB:			// [o==n && z==0] Signed Greater than Zero
-			//CPU_LOG("signed greater (O=N and Z = 0)\n");
+			CPU_LOG("signed greater (O=N and Z = 0)\n");
 			if(Flag.Overflow == Flag.Negative && Flag.Zero == 0)
 				return 1;
 			break;
 		case 0xC:			// [o==n] Signed Greater than Zero or Equal
-			//CPU_LOG("Signed Greater or Zero (O = N)\n");
+			CPU_LOG("Signed Greater or Zero (O = N)\n");
 			if(Flag.Overflow == Flag.Negative)
 				return 1;
 			break;
 		case 0xD:			// [o!=n] Signed Less than Zero
-			//CPU_LOG("Signed Less Than (O != N)\n");
+			CPU_LOG("Signed Less Than (O != N)\n");
 			if(Flag.Overflow != Flag.Negative)
 				return 1;
 			break;
 		case 0xE:			// [o!=n || z==1] Signed Less than Zero or Equal
-			//CPU_LOG("Signed Less Than or Equal to Zero (O!=N or Z= 1)\n");
+			CPU_LOG("Signed Less Than or Equal to Zero (O!=N or Z= 1)\n");
 			if(Flag.Overflow != Flag.Negative || Flag.Zero == 1)
 				return 1;
 			break;
@@ -181,14 +181,14 @@ void CpuCore()
 {
 	int MemAddr;
 	int X, Y;	
-	//CPU_LOG("Core OP %x\n", (OpCode >> 16 & 0xf));
+	CPU_LOG("Core OP %x\n", (OpCode >> 16 & 0xf));
 	switch((OpCode >> 16 & 0xf))
 	{
 	case 0x0: //NOP
-		//CPU_LOG("Nop\n");
+		CPU_LOG("Nop\n");
 		break;
 	case 0x1: //CLS
-		//CPU_LOG("Clear Screen\n");
+		CPU_LOG("Clear Screen\n");
 		
 	 // Clear back buffer	
 		memset(ScreenBuffer, 0, sizeof(ScreenBuffer));
@@ -202,7 +202,7 @@ void CpuCore()
 		}
 		break;
 	case 0x3: //Background Colour
-		//CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
+		CPU_LOG("Set BG colour to %x\n", OpCode & 0xf);
 		
 		SpriteSet.BackgroundColour = OpCode & 0xf;
 		break;
@@ -215,7 +215,7 @@ void CpuCore()
 		Y = (short)REG_Y;
 		MemAddr = IMMEDIATE;
 
-		//CPU_LOG("Draw Sprite at Cords X = %d Y = %d, Mem = %x\n", X, Y, MemAddr);
+		CPU_LOG("Draw Sprite at Cords X = %d Y = %d, Mem = %x\n", X, Y, MemAddr);
 		DrawSprite(MemAddr, X, Y);
 		break;
 	case 0x6: //Draw Sprite from Register addr
@@ -223,7 +223,7 @@ void CpuCore()
 		Y = (short)REG_Y;
 		MemAddr = REG_Z;
 
-		//CPU_LOG("Draw Sprite at Cords from reg %x X = %d Y = %d, Mem = %x\n", (OpCode >> 8) & 0xf, X, Y, MemAddr);
+		CPU_LOG("Draw Sprite at Cords from reg %x X = %d Y = %d, Mem = %x\n", (OpCode >> 8) & 0xf, X, Y, MemAddr);
 		DrawSprite(MemAddr, X, Y);
 		break;
 	case 0x7: //Random Number
@@ -231,7 +231,7 @@ void CpuCore()
 		
 		break;
 	case 0x8: //FLIP Sprite Orientation
-		//CPU_LOG("Flip V = %s H = %s totalcode %x\n", (OpCode >> 8) & 0x1 ? "true" : "false", (OpCode >> 8) & 0x2 ? "true" : "false", (OpCode >> 8) & 0xf );
+		CPU_LOG("Flip V = %s H = %s totalcode %x\n", (OpCode >> 8) & 0x1 ? "true" : "false", (OpCode >> 8) & 0x2 ? "true" : "false", (OpCode >> 8) & 0xf );
 		SpriteSet.VerticalFlip = ((OpCode >> 8) & 0x1) ? true : false;
 		SpriteSet.HorizontalFlip = ((OpCode >> 8) & 0x2) ? true : false;
 		break;
@@ -250,14 +250,14 @@ void CpuCore()
 		RefChip16Sound->GenerateHz(1500, IMMEDIATE);
 		break;
 	case 0xD: //Play tone specified in X for IMMEDIATE ms
-		//CPU_LOG("%dhz sound for %d milliseconds PC %x\n", ReadMem(REG_X), IMMEDIATE, PC);
+		CPU_LOG("%dhz sound for %d milliseconds PC %x\n", ReadMem(REG_X), IMMEDIATE, PC);
 		RefChip16Sound->GenerateHz(ReadMem(REG_X), IMMEDIATE);
 		break;
 	case 0xE: //Set ADSR
 		RefChip16Sound->SetADSR(Op_Y, Op_X, ((OpCode >> 4) & 0xf), Op_Z, ((OpCode >> 12) & 0xf), ((OpCode >> 8) & 0xf));
 		break;
 	default:
-		//CPU_LOG("Bad Core Op %x\n", PC);
+		CPU_LOG("Bad Core Op %x\n", PC);
 		break;
 	}
 }
@@ -265,19 +265,19 @@ void CpuCore()
 void CpuJump()
 {
 	int X, Y;
-	//CPU_LOG("Jump Op %x\n", PC);
+	CPU_LOG("Jump Op %x\n", PC);
 	switch((OpCode >> 16 & 0xf))
 	{
 	/*Jump Commands*/
 	//Jump
 	case 0x0:
-		//CPU_LOG("Jump to %x\n", IMMEDIATE);
+		CPU_LOG("Jump to %x\n", IMMEDIATE);
 		PC = IMMEDIATE;
 		cpubranch = 2;
 		break;
 	//Jump if carry raised is true (Obsolete! in here for compat sake)
 	case 0x1:
-		//CPU_LOG("Obsolete Jump to %x if Carry is true\n", IMMEDIATE);
+		CPU_LOG("Obsolete Jump to %x if Carry is true\n", IMMEDIATE);
 		if(Condition(0x9))
 		{
 			PC = IMMEDIATE;
@@ -286,7 +286,7 @@ void CpuJump()
 		break;
 	//Jump if condition X is true
 	case 0x2:
-		//CPU_LOG("Jump to %x if x is true\n", IMMEDIATE);
+		CPU_LOG("Jump to %x if x is true\n", IMMEDIATE);
 		if(Condition(Op_X))
 		{
 			PC = IMMEDIATE;
@@ -297,7 +297,7 @@ void CpuJump()
 	case 0x3:
 		Y = REG_Y;
 		X = REG_X;
-		//CPU_LOG("Jump to %x if %x = %x\n", IMMEDIATE, X, Y);
+		CPU_LOG("Jump to %x if %x = %x\n", IMMEDIATE, X, Y);
 		if(X == Y)
 		{
 			PC = IMMEDIATE;
@@ -307,14 +307,14 @@ void CpuJump()
 	//Jump to addres in X (Indirect jump!)
 	case 0x6:
 		X = REG_X;
-		//CPU_LOG("Jump to %x Indirect\n", X);
+		CPU_LOG("Jump to %x Indirect\n", X);
 		PC = X;
 		cpubranch = 2;
 		break;
 		/*Branch/Call Commands*/
 	//Call Subroutine at Address
 	case 0x4:
-		//CPU_LOG("Subroutine %x\n", IMMEDIATE);
+		CPU_LOG("Subroutine %x\n", IMMEDIATE);
 		WriteMem(StackPTR, PC);
 		StackPTR += 2;
 		PC = IMMEDIATE;
@@ -323,7 +323,7 @@ void CpuJump()
 		break;
 	//Return from subroutine (POP PC from stack)
 	case 0x5:
-		//CPU_LOG("Return from sub\n");
+		CPU_LOG("Return from sub\n");
 		StackPTR -= 2;
 		PC = ReadMem(StackPTR);
 		cpubranch = 2;
@@ -331,7 +331,7 @@ void CpuJump()
 		break;
 	//Call Subroutine if condition x is true
 	case 0x7:
-		//CPU_LOG("Subroutine %x if x is true\n", IMMEDIATE);
+		CPU_LOG("Subroutine %x if x is true\n", IMMEDIATE);
 		if(Condition(Op_X))
 		{
 			WriteMem(StackPTR, PC);
@@ -344,7 +344,7 @@ void CpuJump()
 	//Call Subroutine in Regsiter X
 	case 0x8:
 		X = REG_X;
-		//CPU_LOG("Subroutine %x from X reg\n", X);
+		CPU_LOG("Subroutine %x from X reg\n", X);
 		WriteMem(StackPTR, PC);
 		StackPTR += 2;
 		PC = X;
@@ -352,45 +352,45 @@ void CpuJump()
 		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! CALL REGX");
 		break;
 	default:
-		//CPU_LOG("Bad Jump Op %x\n", PC);
+		CPU_LOG("Bad Jump Op %x\n", PC);
 		break;
 	}
 }
  
 void CpuLoad()
 {
-	////CPU_LOG("Load Op %x\n", PC);
+	//CPU_LOG("Load Op %x\n", PC);
 	switch((OpCode >> 16 & 0xf))
 	{
 	//Copy Immediate to GPR X
 	case 0x0:
-		//CPU_LOG("Load Imm to X(%x), imm = %x, PC %x\n", Op_X, IMMEDIATE, PC);
+		CPU_LOG("Load Imm to X(%x), imm = %x, PC %x\n", Op_X, IMMEDIATE, PC);
 		REG_X = IMMEDIATE;		
 		break;
 	//Point Stack  Pointer to Address
 	case 0x1:
-		//CPU_LOG("Load Imm to StackPTR, imm = %x, PC %x\n", IMMEDIATE, PC);
+		CPU_LOG("Load Imm to StackPTR, imm = %x, PC %x\n", IMMEDIATE, PC);
 		StackPTR = IMMEDIATE;
 		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! LDM STACKPTR");
 		if(StackPTR < 0xFDF0) CPU_LOG("Stack Underflow! LDM STACKPTR");
 		break;
 	//Load Register with value at imm address
 	case 0x2:
-		//CPU_LOG("Load imm addr to X(%x), immaddr data = %x, PC %x\n", Op_X, ReadMem(IMMEDIATE), PC);
+		CPU_LOG("Load imm addr to X(%x), immaddr data = %x, PC %x\n", Op_X, ReadMem(IMMEDIATE), PC);
 		REG_X = ReadMem(IMMEDIATE);
 		break;
 	//Load X with value from memory using address in Y
 	case 0x3:
-		//CPU_LOG("Load Y(%x) addr to X(%x), Yaddr = %x, Yaddr data = %x, PC %x OpCode %x\n", Op_Y, Op_X, REG_Y, ReadMem(REG_Y), PC, OpCode);
+		CPU_LOG("Load Y(%x) addr to X(%x), Yaddr = %x, Yaddr data = %x, PC %x OpCode %x\n", Op_Y, Op_X, REG_Y, ReadMem(REG_Y), PC, OpCode);
 		REG_X = ReadMem(REG_Y);
 		break;
 	//Load Y in to X
 	case 0x4:
-		//CPU_LOG("Load Y(%x) to X(%x), Y = %x, PC %x\n", Op_X, Op_Y, REG_Y, PC);
+		CPU_LOG("Load Y(%x) to X(%x), Y = %x, PC %x\n", Op_X, Op_Y, REG_Y, PC);
 		REG_X = REG_Y;
 		break;
 	default:
-		//CPU_LOG("Bad Load Op %x\n", PC);
+		CPU_LOG("Bad Load Op %x\n", PC);
 		break;
 	}
 
@@ -404,16 +404,16 @@ void CpuStore()
 	{
 	//Store X Register value in imm Address 
 	case 0x0:
-		//CPU_LOG("Store X in mem imm address, X = %x, imm addr = %x, PC %x\n", REG_X, IMMEDIATE, PC);
+		CPU_LOG("Store X in mem imm address, X = %x, imm addr = %x, PC %x\n", REG_X, IMMEDIATE, PC);
 		WriteMem(IMMEDIATE, REG_X);
 		break;
 	//Store X Regsiter value in address given by Y Register
 	case 0x1:
-		//CPU_LOG("Store X(%x) in mem Y(%x) address, X = %x, Y addr = %x, PC %x\n", Op_X, Op_Y, REG_X, REG_Y, PC);
+		CPU_LOG("Store X(%x) in mem Y(%x) address, X = %x, Y addr = %x, PC %x\n", Op_X, Op_Y, REG_X, REG_Y, PC);
 		WriteMem(GPR[((OpCode >> 28) & 0xf)], REG_X);
 		break;
 	default:
-		//CPU_LOG("Bad Store Op %x\n", PC);
+		CPU_LOG("Bad Store Op %x\n", PC);
 		break;
 	}
 }
@@ -450,21 +450,21 @@ void CpuAdd()
 	{
 	//X = X + Imm [c,z,o,n]
 	case 0x0:		
-		//CPU_LOG("Add X = X(%x) + imm, X = %x, imm = %x, Result = %x, Op %x\n", Op_X, REG_X, IMMEDIATE, REG_X + IMMEDIATE, PC);
+		CPU_LOG("Add X = X(%x) + imm, X = %x, imm = %x, Result = %x, Op %x\n", Op_X, REG_X, IMMEDIATE, REG_X + IMMEDIATE, PC);
 		REG_X = AddSetFlags(REG_X + IMMEDIATE, ((REG_X & 0x8000) && (IMMEDIATE & 0x8000)) || (!(REG_X & 0x8000) && !(IMMEDIATE & 0x8000)));
 		break;
 	//X = X + Y [c,z,o,n]
 	case 0x1:
-		//CPU_LOG("Add X = X + Y, X = %x, Y = %x, Result = %x, Op %x\n", REG_X, REG_Y, REG_X + REG_Y, PC);
+		CPU_LOG("Add X = X + Y, X = %x, Y = %x, Result = %x, Op %x\n", REG_X, REG_Y, REG_X + REG_Y, PC);
 		REG_X = AddSetFlags(REG_X + REG_Y, ((REG_X & 0x8000) && (REG_Y & 0x8000)) || (!(REG_X & 0x8000) && !(REG_Y & 0x8000)));
 		break;
 	//Z = X + Y [c,z,o,n]
 	case 0x2:
-		//CPU_LOG("Add Z = X + Y, X = %x, imm = %x, Result = %x, Op %x\n", REG_X, REG_Y, REG_X + REG_Y, PC);
+		CPU_LOG("Add Z = X + Y, X = %x, imm = %x, Result = %x, Op %x\n", REG_X, REG_Y, REG_X + REG_Y, PC);
 		REG_Z = AddSetFlags(REG_X + REG_Y, ((REG_X & 0x8000) && (REG_Y & 0x8000)) || (!(REG_X & 0x8000) && !(REG_Y & 0x8000)));
 		break;
 	default:
-		//CPU_LOG("Bad Add Op %x\n", PC);
+		CPU_LOG("Bad Add Op %x\n", PC);
 		break;
 	}
 }
@@ -512,31 +512,31 @@ void CpuSub()
 	{
 	//X = X - imm [c,z,o,n]
 	case 0x0:
-		//CPU_LOG("Sub Op X = X - imm, X = %x, imm = %x, Result = %x, PC %x\n", REG_X, IMMEDIATE, REG_X - IMMEDIATE,  PC);
+		CPU_LOG("Sub Op X = X - imm, X = %x, imm = %x, Result = %x, PC %x\n", REG_X, IMMEDIATE, REG_X - IMMEDIATE,  PC);
 		REG_X = SubSetFlags(REG_X, IMMEDIATE);
 		break;
 	//X = X - Y [c,z,o,n]
 	case 0x1:
-		//CPU_LOG("Sub Op X = X - Y, X = %x, Y = %x, Result = %x, PC %x\n", REG_X, REG_Y, REG_X - REG_Y,  PC);
+		CPU_LOG("Sub Op X = X - Y, X = %x, Y = %x, Result = %x, PC %x\n", REG_X, REG_Y, REG_X - REG_Y,  PC);
 		REG_X = SubSetFlags(REG_X, REG_Y);
 		break;
 	//Z = X - Y [c,z,o,n]
 	case 0x2:
-		//CPU_LOG("Sub Op Z = X - Y, X = %x, Y = %x, Result = %x, PC %x\n", REG_X, REG_Y, REG_X - REG_Y,  PC);
+		CPU_LOG("Sub Op Z = X - Y, X = %x, Y = %x, Result = %x, PC %x\n", REG_X, REG_Y, REG_X - REG_Y,  PC);
 		REG_Z = SubSetFlags(REG_X, REG_Y);
 		break;
 	//X - imm no store just flags [c,z,o,n]
 	case 0x3:
-		//CPU_LOG("Sub Op X - imm just flags, X = %x, imm = %x, Result = %x, PC %x\n", REG_X, IMMEDIATE, REG_X - IMMEDIATE,  PC);
+		CPU_LOG("Sub Op X - imm just flags, X = %x, imm = %x, Result = %x, PC %x\n", REG_X, IMMEDIATE, REG_X - IMMEDIATE,  PC);
 		SubSetFlags(REG_X, IMMEDIATE);
 		break;
 	//X - Y no store just flags [c,z,o,n]
 	case 0x4:
-		//CPU_LOG("Sub Op X - Y just flags, X = %x, Y = %x, Result = %x, PC %x\n", REG_X, REG_Y, REG_X - REG_Y,  PC);
+		CPU_LOG("Sub Op X - Y just flags, X = %x, Y = %x, Result = %x, PC %x\n", REG_X, REG_Y, REG_X - REG_Y,  PC);
 		SubSetFlags(REG_X, REG_Y);
 		break;
 	default:
-		//CPU_LOG("Bad Sub Op %x\n", PC);
+		CPU_LOG("Bad Sub Op %x\n", PC);
 		break;
 	}
 }
@@ -563,34 +563,34 @@ void CpuAND()
 	{
 	//X = X & imm [z,n]
 	case 0x0:
-		//CPU_LOG("AND X = X & IMM, X = %x, Imm = %x, Result = %x PC %x OpCode %x\n", REG_X, IMMEDIATE, REG_X & IMMEDIATE, PC, OpCode);
+		CPU_LOG("AND X = X & IMM, X = %x, Imm = %x, Result = %x PC %x OpCode %x\n", REG_X, IMMEDIATE, REG_X & IMMEDIATE, PC, OpCode);
 		REG_X = REG_X & IMMEDIATE;
 		LogicCMP(REG_X);
 		break;
 	//X = X & Y [z,n]
 	case 0x1:
-		//CPU_LOG("AND X = X(%x) & Y(%x), X = %x, Y = %x, Result = %x PC %x\n", Op_X, Op_Y, REG_X, REG_Y, REG_X & REG_Y, PC);
+		CPU_LOG("AND X = X(%x) & Y(%x), X = %x, Y = %x, Result = %x PC %x\n", Op_X, Op_Y, REG_X, REG_Y, REG_X & REG_Y, PC);
 		REG_X = REG_X & REG_Y;
 		LogicCMP(REG_X);
 		break;
 	//Z = X & Y [z,n]
 	case 0x2:
-		//CPU_LOG("AND Z = X & Y, X = %x, Y = %x, Result = %x PC %x\n", REG_X, IMMEDIATE, REG_X & REG_Y, PC);
+		CPU_LOG("AND Z = X & Y, X = %x, Y = %x, Result = %x PC %x\n", REG_X, IMMEDIATE, REG_X & REG_Y, PC);
 		REG_Z = REG_X & REG_Y;
 		LogicCMP(REG_Z);
 		break;
 	//X & imm discard flags only [z,n]
 	case 0x3:
-		//CPU_LOG("AND X & IMM flags only, X = %x, Imm = %x, Result = %x PC %x\n", REG_X, IMMEDIATE, REG_X & IMMEDIATE, PC);
+		CPU_LOG("AND X & IMM flags only, X = %x, Imm = %x, Result = %x PC %x\n", REG_X, IMMEDIATE, REG_X & IMMEDIATE, PC);
 		LogicCMP(REG_X & IMMEDIATE);
 		break;
 	//X & Y discard flags only [z,n]
 	case 0x4:
-		//CPU_LOG("AND X & Y flags only, X = %x, Y = %x, Result = %x PC %x\n", REG_X, IMMEDIATE, REG_X & REG_Y, PC);
+		CPU_LOG("AND X & Y flags only, X = %x, Y = %x, Result = %x PC %x\n", REG_X, IMMEDIATE, REG_X & REG_Y, PC);
 		LogicCMP(REG_X & REG_Y);
 		break;
 	default:
-		//CPU_LOG("Bad AND Op %x\n", PC);
+		CPU_LOG("Bad AND Op %x\n", PC);
 		break;
 	}
 }
@@ -601,53 +601,53 @@ void CpuOR()
 	{
 	//X = X | imm [z,n]
 	case 0x0:
-		//CPU_LOG("OR X = X(%x) | IMM, X = %x, Imm = %x, Result = %x PC %x\n", Op_X,  REG_X, IMMEDIATE, REG_X | IMMEDIATE, PC);
+		CPU_LOG("OR X = X(%x) | IMM, X = %x, Imm = %x, Result = %x PC %x\n", Op_X,  REG_X, IMMEDIATE, REG_X | IMMEDIATE, PC);
 		REG_X = REG_X | IMMEDIATE;
 		LogicCMP(REG_X);
 		break;
 	//X = X | Y [z,n]
 	case 0x1:
-		//CPU_LOG("OR X = X(%x) | Y(%x), X = %x, Y = %x, Result = %x PC %x\n", Op_X, Op_Y, REG_X, REG_Y, REG_X | REG_Y, PC);
+		CPU_LOG("OR X = X(%x) | Y(%x), X = %x, Y = %x, Result = %x PC %x\n", Op_X, Op_Y, REG_X, REG_Y, REG_X | REG_Y, PC);
 		REG_X = REG_X | REG_Y;
 		LogicCMP(REG_X);
 		break;
 	//Z = X | Y [z,n]
 	case 0x2:
-		//CPU_LOG("OR Z = X | Y, X = %x, Y = %x, Result = %x PC %x\n", REG_X, REG_Y, REG_X | REG_Y, PC);
+		CPU_LOG("OR Z = X | Y, X = %x, Y = %x, Result = %x PC %x\n", REG_X, REG_Y, REG_X | REG_Y, PC);
 		REG_Z = REG_X | REG_Y;
 		LogicCMP(REG_Z);
 		break;
 	default:
-		//CPU_LOG("Bad OR Op %x\n", PC);
+		CPU_LOG("Bad OR Op %x\n", PC);
 		break;
 	}
 }
   
 void CpuXOR()
 {
-	//CPU_LOG("XOR Op %x\n", PC);
+	CPU_LOG("XOR Op %x\n", PC);
 	switch((OpCode >> 16 & 0xf))
 	{
 	//X = X ^ imm [z,n]
 	case 0x0:
-		//CPU_LOG("XOR X = X | IMM, X = %x, Imm = %x, Result = %x PC %x\n", REG_X, IMMEDIATE, REG_X ^ IMMEDIATE, PC);
+		CPU_LOG("XOR X = X | IMM, X = %x, Imm = %x, Result = %x PC %x\n", REG_X, IMMEDIATE, REG_X ^ IMMEDIATE, PC);
 		REG_X = REG_X ^ IMMEDIATE;
 		LogicCMP(REG_X);
 		break;
 	//X = X ^ Y [z,n]
 	case 0x1:
-		//CPU_LOG("XOR X = X | IMM, X = %x, Y = %x, Result = %x PC %x\n", REG_X, REG_Y, REG_X ^ REG_Y, PC);
+		CPU_LOG("XOR X = X | IMM, X = %x, Y = %x, Result = %x PC %x\n", REG_X, REG_Y, REG_X ^ REG_Y, PC);
 		REG_X = REG_X ^ REG_Y;
 		LogicCMP(REG_X);
 		break;
 	//Z = X ^ Y [z,n]
 	case 0x2:
-		//CPU_LOG("XOR Z = X | IMM, X = %x, Y = %x, Result = %x PC %x\n", REG_X, REG_Y, REG_X ^ REG_Y, PC);
+		CPU_LOG("XOR Z = X | IMM, X = %x, Y = %x, Result = %x PC %x\n", REG_X, REG_Y, REG_X ^ REG_Y, PC);
 		REG_Z = REG_X ^ REG_Y;
 		LogicCMP(REG_Z);
 		break;
 	default:
-		//CPU_LOG("Bad XOR Op %x\n", PC);
+		CPU_LOG("Bad XOR Op %x\n", PC);
 		break;
 	}
 }
@@ -677,21 +677,21 @@ void CpuMul()
 	{
 	//X = X * imm [c,z,n]
 	case 0x0:
-		//CPU_LOG("MUL X = X * Imm, X = %x, Imm = %x, result = %x, PC %x\n", REG_X, IMMEDIATE, REG_X * IMMEDIATE, PC);
+		CPU_LOG("MUL X = X * Imm, X = %x, Imm = %x, result = %x, PC %x\n", REG_X, IMMEDIATE, REG_X * IMMEDIATE, PC);
 		REG_X = MulSetFlags(REG_X * IMMEDIATE);
 		break;
 	//X = X * Y [c,z,n]
 	case 0x1:
-		//CPU_LOG("MUL X = X * Y, X = %x, Y = %x, result = %x, PC %x\n", REG_X, REG_Y, REG_X * REG_Y, PC);
+		CPU_LOG("MUL X = X * Y, X = %x, Y = %x, result = %x, PC %x\n", REG_X, REG_Y, REG_X * REG_Y, PC);
 		REG_X = MulSetFlags(REG_X * REG_Y);
 		break;
 	//Z = X * Y [c,z,n]
 	case 0x2:
-		//CPU_LOG("MUL Z = X * Y, X = %x, Y = %x, result = %x, PC %x\n", REG_X, REG_Y, REG_X * REG_Y, PC);
+		CPU_LOG("MUL Z = X * Y, X = %x, Y = %x, result = %x, PC %x\n", REG_X, REG_Y, REG_X * REG_Y, PC);
 		REG_Z = MulSetFlags(REG_X * REG_Y);
 		break;
 	default:
-		//CPU_LOG("Bad MUL Op %x\n", PC);
+		CPU_LOG("Bad MUL Op %x\n", PC);
 		break;
 	}
 }
@@ -717,22 +717,22 @@ int DivSetFlags(unsigned short CalcResult, int Remainder)
 void CpuDiv()
 {
 	short TempResult = 0;
-	//CPU_LOG("DIV Op %x\n", PC);
+	CPU_LOG("DIV Op %x\n", PC);
 	switch((OpCode >> 16 & 0xf))
 	{
 	//X = X / imm [c,z,n]
 	case 0x0:
-		//CPU_LOG("DIV X = X / Imm, X = %x, Imm = %x, result = %x, PC %x\n", REG_X, IMMEDIATE, REG_X / IMMEDIATE, PC);
+		CPU_LOG("DIV X = X / Imm, X = %x, Imm = %x, result = %x, PC %x\n", REG_X, IMMEDIATE, REG_X / IMMEDIATE, PC);
 		REG_X = DivSetFlags(REG_X / IMMEDIATE, REG_X % IMMEDIATE);
 		break;
 	//X = X / Y [c,z,n]
 	case 0x1:
-		//CPU_LOG("DIV X = X / Y, X = %x, Y = %x, result = %x, PC %x\n", REG_X, REG_Y, REG_X / REG_Y, PC);
+		CPU_LOG("DIV X = X / Y, X = %x, Y = %x, result = %x, PC %x\n", REG_X, REG_Y, REG_X / REG_Y, PC);
 		REG_X = DivSetFlags(REG_X / REG_Y, REG_X % REG_Y);
 		break;
 	//Z = X / Y [c,z,n]
 	case 0x2:
-		//CPU_LOG("DIV Z = X / Y, X = %x, Y = %x, result = %x, PC %x\n", REG_X, REG_Y, REG_X / REG_Y, PC);
+		CPU_LOG("DIV Z = X / Y, X = %x, Y = %x, result = %x, PC %x\n", REG_X, REG_Y, REG_X / REG_Y, PC);
 		REG_Z = DivSetFlags(REG_X / REG_Y, REG_X % REG_Y);
 		break;
 	// X = X MOD imm [z,n]
@@ -773,7 +773,7 @@ void CpuDiv()
 		LogicCMP(REG_Z);
 		break;
 	default:
-		//CPU_LOG("Bad DIV Op %x\n", PC);
+		CPU_LOG("Bad DIV Op %x\n", PC);
 		break;
 	}
 }
@@ -786,37 +786,37 @@ void CpuShift()
 	{
 	//SHL & SAL [z,n]
 	case 0x0:
-		//CPU_LOG("SHL & SAL, REG_X(%x) << N, REG_X = %x, N = %x, Result = %x, Op %x\n", Op_X, REG_X, OpCode & 0xf, REG_X << (OpCode & 0xf), OpCode);
+		CPU_LOG("SHL & SAL, REG_X(%x) << N, REG_X = %x, N = %x, Result = %x, Op %x\n", Op_X, REG_X, OpCode & 0xf, REG_X << (OpCode & 0xf), OpCode);
 		REG_X = REG_X << (OpCode & 0xf);
 		break;
 	//SHR [z,n]
 	case 0x1:
-		//CPU_LOG("SHR, REG_X >> N, REG_X = %x, N = %x, Result = %x, Op %x\n", REG_X, OpCode & 0xf, REG_X >> (OpCode & 0xf), OpCode);
+		CPU_LOG("SHR, REG_X >> N, REG_X = %x, N = %x, Result = %x, Op %x\n", REG_X, OpCode & 0xf, REG_X >> (OpCode & 0xf), OpCode);
 		REG_X = REG_X >> (OpCode & 0xf);
 		break;
 	//SAR (repeat sign) [z,n]
 	case 0x2:
-		//CPU_LOG("SAR (repeat sign), REG_X >> N, REG_X = %x, N = %x, Result = %x, Op %x\n", REG_X, OpCode & 0xf, REG_X >> (OpCode & 0xf), OpCode);
+		CPU_LOG("SAR (repeat sign), REG_X >> N, REG_X = %x, N = %x, Result = %x, Op %x\n", REG_X, OpCode & 0xf, REG_X >> (OpCode & 0xf), OpCode);
 		REG_X = (short)REG_X >> (OpCode & 0xf);
 		break;
 	//SHL & SAL Y Reg [z,n]
 	case 0x3:
-		//CPU_LOG("SHL/SAL, REG_X << REG_Y & 0xF, REG_X = %x, REG_Y = %x, Result = %x, Op %x\n", REG_X, REG_Y & 0xF, REG_X << (REG_Y & 0xf), OpCode);
+		CPU_LOG("SHL/SAL, REG_X << REG_Y & 0xF, REG_X = %x, REG_Y = %x, Result = %x, Op %x\n", REG_X, REG_Y & 0xF, REG_X << (REG_Y & 0xf), OpCode);
 		REG_X = REG_X << (REG_Y & 0xF);
 		break;
 	//SHR Y Reg [z,n]
 	case 0x4:
-		//CPU_LOG("SHR, REG_X >> REG_Y & 0xF, REG_X = %x, REG_Y = %x, Result = %x, Op %x\n", REG_X, REG_Y & 0xF, REG_X >> (REG_Y & 0xf), OpCode);
+		CPU_LOG("SHR, REG_X >> REG_Y & 0xF, REG_X = %x, REG_Y = %x, Result = %x, Op %x\n", REG_X, REG_Y & 0xF, REG_X >> (REG_Y & 0xf), OpCode);
 		REG_X = REG_X >> (REG_Y & 0xF);
 
 		break;
 	//SAR Y Reg [z,n]
 	case 0x5:
-		//CPU_LOG("SAR, REG_X >> REG_Y & 0xF, REG_X = %x, REG_Y = %x, Result = %x, Op %x\n", REG_X, REG_Y & 0xF, REG_X >> (REG_Y & 0xf), OpCode);
+		CPU_LOG("SAR, REG_X >> REG_Y & 0xF, REG_X = %x, REG_Y = %x, Result = %x, Op %x\n", REG_X, REG_Y & 0xF, REG_X >> (REG_Y & 0xf), OpCode);
 		REG_X = (short)REG_X >> (REG_Y & 0xF);
 		break;
 	default:
-		//CPU_LOG("Bad Shift Op %x\n", PC);
+		CPU_LOG("Bad Shift Op %x\n", PC);
 		break;
 	}
 	if(REG_X & 0x8000) Flag.Negative = 1;
@@ -832,7 +832,7 @@ void CpuPushPop()
 	{
 	//Store Register X on stack SP + 2 (X is actually in the first nibble)
 	case 0x0:
-		//CPU_LOG("Store Register X(%x) value %x on stack PC = %x\n", (OpCode >> 16) & 0xff, REG_X, PC);
+		CPU_LOG("Store Register X(%x) value %x on stack PC = %x\n", (OpCode >> 16) & 0xff, REG_X, PC);
 		WriteMem(StackPTR, REG_X);
 		StackPTR += 2;
 		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! PUSH X");
@@ -841,12 +841,12 @@ void CpuPushPop()
 	case 0x1:
 		StackPTR -= 2;
 		if(StackPTR < 0xFDF0) CPU_LOG("Stack Underflow! POP X");
-		//CPU_LOG("Store Register X(%x) value %x from stack PC = %x\n", (OpCode >> 16) & 0xff, ReadMem(StackPTR), PC);
+		CPU_LOG("Store Register X(%x) value %x from stack PC = %x\n", (OpCode >> 16) & 0xff, ReadMem(StackPTR), PC);
 		REG_X = ReadMem(StackPTR);
 		break;
 	//Store all GPR registers in the stack, increase SP by 32 (16 x 2)
 	case 0x2:
-		//CPU_LOG("Store All Registers on stack PC = %x\n", PC);
+		CPU_LOG("Store All Registers on stack PC = %x\n", PC);
 		for(int i = 0; i < 16; i++)
 		{
 			WriteMem(StackPTR, GPR[i]);
@@ -856,7 +856,7 @@ void CpuPushPop()
 		break;
 	//Decrease SP by 32 and POP all GPR registers
 	case 0x3:
-		//CPU_LOG("Restore All Registers on stack PC = %x\n", PC);
+		CPU_LOG("Restore All Registers on stack PC = %x\n", PC);
 		for(int i = 15; i >= 0; i--)
 		{
 			StackPTR -= 2;
@@ -866,7 +866,7 @@ void CpuPushPop()
 		break;
 	//Store flags register on stack, increase SP by 2
 	case 0x4:
-		//CPU_LOG("Store Flags (%x) on stack PC = %x\n", Flag._u16, PC);
+		CPU_LOG("Store Flags (%x) on stack PC = %x\n", Flag._u16, PC);
 		WriteMem(StackPTR, Flag._u16);
 		StackPTR += 2;
 		if(StackPTR > 0xFFF0) CPU_LOG("Stack Overflow! Store Flags");
@@ -875,11 +875,11 @@ void CpuPushPop()
 	case 0x5:
 		StackPTR -= 2;
 		if(StackPTR < 0xFDF0) CPU_LOG("Stack Underflow! POP Flags");
-		//CPU_LOG("Restore Flags (%x) from stack PC = %x\n", ReadMem(StackPTR), PC);
+		CPU_LOG("Restore Flags (%x) from stack PC = %x\n", ReadMem(StackPTR), PC);
 		Flag._u16 = ReadMem(StackPTR);
 		break;
 	default:
-		//CPU_LOG("Bad PUSHPOP Op %x\n", PC);
+		CPU_LOG("Bad PUSHPOP Op %x\n", PC);
 		break;
 	}
 }
@@ -888,7 +888,7 @@ void CpuPushPop()
 void CpuPallate()
 {
 	int j = 0;
-	//CPU_LOG("PAL %x IMM %x\n", (OpCode >> 16 & 0xf), IMMEDIATE);
+	CPU_LOG("PAL %x IMM %x\n", (OpCode >> 16 & 0xf), IMMEDIATE);
 	switch((OpCode >> 16 & 0xf))
 	{
 		//PAL HHLL - Load the palette starting at address HHLL, 16*3 bytes, RGB format; used for all drawing since last vblank.
@@ -990,7 +990,7 @@ void FetchOpCode()
 void ExecuteOp()
 {
 	
-	//CPU_LOG("%x OPcode %x\n", PC, (OpCode >> 16 & 0xff));
+	CPU_LOG("%x OPcode %x\n", PC, (OpCode >> 16 & 0xff));
 	switch(OpCode>>20 & 0xf)
 	{
 		case 0x0: CpuCore(); break;
@@ -1009,7 +1009,7 @@ void ExecuteOp()
 		case 0xD: CpuPallate(); break;
 		case 0xE: CpuNOTNEG(); break;
 		default:
-			//CPU_LOG("Unknown Op\n");
+			CPU_LOG("Unknown Op\n");
 			break;
 	}
 }
