@@ -20,8 +20,6 @@
 #ifndef _D3DAPP_H
 #define _D3DAPP_H
 
-#include <d3d9.h>
-#include <d3dx9.h>
 #include <SDL.h>
 #include <SDL_syswm.h>
 

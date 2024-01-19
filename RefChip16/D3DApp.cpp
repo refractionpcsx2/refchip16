@@ -33,6 +33,10 @@ Sprite SpriteSet;
 struct CHIP16VERTEX {FLOAT X, Y, Z; DWORD COLOR;};
 #define CUSTOMFVF (D3DFVF_XYZ | D3DFVF_DIFFUSE)
 CHIP16VERTEX pixel[4*16]; //Buffer to store all the pixel verticles
+LARGE_INTEGER nStartTime;
+LARGE_INTEGER nStopTime;
+LARGE_INTEGER nElapsed;
+LARGE_INTEGER nFrequency;
 
 #define CPU_LOG __Log
 #define FPS_LOG __Log2
@@ -372,6 +376,27 @@ void EndDrawing()
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
 	
+	if (MenuVSync)
+	{
+		float elapsedMicroseconds = 0;
+		QueryPerformanceCounter(&nStopTime);
+		nElapsed.QuadPart = (nStopTime.QuadPart - nStartTime.QuadPart) * 1000000;
+
+		elapsedMicroseconds = (float)((float)nElapsed.QuadPart / (float)nFrequency.QuadPart);
+		//CPU_LOG("Frame took %f microseconds\n", elapsedMicroseconds);
+		while (elapsedMicroseconds < 16666.66667f)
+		{
+			Sleep((long)(16666 - elapsedMicroseconds) >> 10); //Divide by 1024, we want to be under the miliseconds if we can
+			QueryPerformanceCounter(&nStopTime);
+			nElapsed.QuadPart = (nStopTime.QuadPart - nStartTime.QuadPart) * 1000000;
+			elapsedMicroseconds = (float)((float)nElapsed.QuadPart / (float)nFrequency.QuadPart);
+			//CPU_LOG("%f microseconds now\n", elapsedMicroseconds);
+		}
+
+		QueryPerformanceFrequency(&nFrequency);
+		QueryPerformanceCounter(&nStartTime);
+	}
+
 	SDL_RenderPresent(renderer);
 	SDL_DestroyTexture(texture);
 }
